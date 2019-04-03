@@ -9,8 +9,8 @@
         <Filename Value="mft.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="475"/>
-        <CursorPos X="40" Y="495"/>
+        <TopLine Value="455"/>
+        <CursorPos X="40" Y="465"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>

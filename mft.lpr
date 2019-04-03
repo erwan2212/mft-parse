@@ -383,7 +383,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Clears and prepares the PATHS array
   PATHS := nil;
 
-  if 1=1 then //RetrieveDirectoryTreeCB.Checked then
+  if 1=0 then //RetrieveDirectoryTreeCB.Checked then
   begin
     Log('Tree structure requested : Initializing data container...');
     Setlength(PATHS,MASTER_FILE_TABLE_RECORD_COUNT+1);
@@ -462,7 +462,7 @@ CURRENT_DRIVE :=drive; //'c:'
         CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
         // Gets the File Name, which begins at offset $5A of this attribute
            FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
-        // Gets the File Path
+           // Gets the File Path
            if 1=1 then //RetrieveDirectoryTreeCB.Checked then
              FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'
            else
@@ -493,9 +493,9 @@ CURRENT_DRIVE :=drive; //'c:'
 
       if (filter<>'') then
       begin
-      if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttostr(CurrentRecordLocator));
+      if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttohex(CurrentRecordLocator,8));
       end
-      else log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttostr(CurrentRecordLocator));
+      else log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttohex(CurrentRecordLocator,8));
 
       end;
 
@@ -517,6 +517,12 @@ CURRENT_DRIVE :=drive; //'c:'
 end;
 
 begin
+  if paramcount=0 then
+     begin
+     writeln('mft-parse by erwan2212@gmail.com');
+     writeln('mft-parse x: [filename_filter]');
+     exit;
+     end;
   if paramcount=2 then filter:=paramstr(2);
   mft_parse (paramstr(1),filter);
 end.
