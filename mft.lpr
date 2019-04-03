@@ -383,7 +383,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Clears and prepares the PATHS array
   PATHS := nil;
 
-  if 1=0 then //RetrieveDirectoryTreeCB.Checked then
+  if 1=1 then //RetrieveDirectoryTreeCB.Checked then
   begin
     Log('Tree structure requested : Initializing data container...');
     Setlength(PATHS,MASTER_FILE_TABLE_RECORD_COUNT+1);
