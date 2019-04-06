@@ -231,7 +231,7 @@ begin
       ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
       CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
       // Gets the Path Name, which begins at offset $5A of this attribute
-         ParentName := WideString(Copy(FileNameAttributeData, $5A, pFileNameAttribute^.NameLength*2));
+         ParentName := WideString(Copy(FileNameAttributeData, $5A, 1+pFileNameAttribute^.NameLength*2));
       // Gets the Local Parent Directory Record Number :
          LocalParentReference := pFileNameAttribute^.DirectoryFileReferenceNumber;
       Dispose(pFileNameAttribute);
