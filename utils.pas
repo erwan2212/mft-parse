@@ -37,15 +37,16 @@ type
  	  wSignature: Word;
   end;
 
+//https://docs.microsoft.com/fr-fr/windows/desktop/DevNotes/attribute-record-header
 type
   TRECORD_ATTRIBUTE = packed record
-    AttributeType : DWord;
-    Length : DWord;
-    NonResident : Byte;
-    NameLength : Byte;
-    NameOffset : Word;
-    Flags : Word;
-    AttributeNumber : Word;
+    AttributeType : DWord; //0-3
+    Length : DWord;        //4-7
+    NonResident : Byte;    //8
+    NameLength : Byte;     //9
+    NameOffset : Word;     //10-11
+    Flags : Word;          //12-13
+    AttributeNumber : Word; //14-15
   end;
 
 type
@@ -65,7 +66,7 @@ type
 
 
 type
-  TNTFS_RECORD_HEADER = packed record
+  TNTFS_RECORD_HEADER = packed record   //or called MFT header
     Identifier: array[1..4] of Char; // Here must be 'FILE'
     UsaOffset : Word;
     UsaCount : Word;

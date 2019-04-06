@@ -70,7 +70,7 @@ begin
 end;
 
 function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord;
-                                        FindSpecificFileNameSpaceValue: boolean=false) : TDynamicCharArray;
+                                        FindSpecificFileNameSpaceValue: boolean=false;AttributeOffset:pword=nil) : TDynamicCharArray;
   var
     pFileRecord: ^TFILE_RECORD;
     pRecordAttribute: ^TRECORD_ATTRIBUTE;
@@ -106,31 +106,41 @@ function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord
       CopyMemory(pRecordAttribute, @TmpRecordData[0], SizeOf(TRECORD_ATTRIBUTE));
     end;
 
-    if pRecordAttribute^.AttributeType = AttributeType then begin
-
-      if (FindSpecificFileNameSpaceValue) and (AttributeType=atAttributeFileName)  then begin
+    if pRecordAttribute^.AttributeType = AttributeType then
+       begin
+       //writeln(inttohex(AttributeType,1)+' @ '+inttohex(NextAttributeOffset,2));
+       if AttributeOffset <>nil then copymemory(AttributeOffset,@NextAttributeOffset,sizeof(word));
+      if (FindSpecificFileNameSpaceValue) and (AttributeType=atAttributeFileName)  then
+         begin
 
         // We test here the FileNameSpace Value directly (without any record structure)
         if (TmpRecordData[$59]=Char($0)) {POSIX} or (TmpRecordData[$59]=Char($1)) {Win32}
-           or (TmpRecordData[$59]=Char($3)) {Win32&DOS} then begin
-          SetLength(result,pRecordAttribute^.Length);
-          result := Copy(TmpRecordData,0,pRecordAttribute^.Length);
-        end else begin
-          NextAttributeOffset := NextAttributeOffset + pRecordAttribute^.Length;
-          SetLength(TmpRecordData,TotalBytes-(NextAttributeOffset-1));
-          TmpRecordData := Copy(RecordData,NextAttributeOffset,TotalBytes-(NextAttributeOffset-1));
-          // Recursive Call : finds next matching attributes
-          result := FindAttributeByType(TmpRecordData,AttributeType,true);
-        end;
+           or (TmpRecordData[$59]=Char($3)) {Win32&DOS} then
+              begin
+              SetLength(result,pRecordAttribute^.Length);
+              result := Copy(TmpRecordData,0,pRecordAttribute^.Length);
+              end
+              else
+              begin
+              NextAttributeOffset := NextAttributeOffset + pRecordAttribute^.Length;
+              SetLength(TmpRecordData,TotalBytes-(NextAttributeOffset-1));
+              TmpRecordData := Copy(RecordData,NextAttributeOffset,TotalBytes-(NextAttributeOffset-1));
+              // Recursive Call : finds next matching attributes
+              result := FindAttributeByType(TmpRecordData,AttributeType,true);
+              end;
 
-      end else begin
-        SetLength(result,pRecordAttribute^.Length);
-        result := Copy(TmpRecordData,0,pRecordAttribute^.Length);
-      end;
+              end
+              else
+              begin
+              SetLength(result,pRecordAttribute^.Length);
+              result := Copy(TmpRecordData,0,pRecordAttribute^.Length);
+              end;
 
-    end else begin
-      result := nil;
-    end;
+              end
+              else
+              begin
+              result := nil;
+              end;
     Dispose(pRecordAttribute);
   end;
 
@@ -269,13 +279,17 @@ CurrentRecordCounter: integer;
 
   FileName: WideString;
   FilePath: string;
-  FileCreationTime, FileChangeTime: TDateTime;
+  FileCreationTime, FileChangeTime,LastWriteTime, LastAccessTime   : TDateTime;
   FileSize: Int64;
   FileSizeArray : TDynamicCharArray;
 
   i:integer;
-  sql:string;
-  tid:dword;
+  location
+    :string;
+  tid,datasize:dword;
+  bresident:boolean;
+  AttributeOffset,contentoffset:word;
+  datarun,datalen,dataoffset,j:byte;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
@@ -344,7 +358,7 @@ CURRENT_DRIVE :=drive; //'c:'
     exit;
     end;
   end;
-  Log('MFT Data FixedUp');
+  //Log('MFT Data FixedUp');
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   MFTAttributeData := FindAttributeByType(MFTData,atAttributeData);
 
@@ -400,6 +414,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
+  log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident');
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Main Loop
@@ -438,9 +453,15 @@ CURRENT_DRIVE :=drive; //'c:'
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
 
 
-
+//mft header is usually 56 bytes - offset 20 & 21 i.e (1st) attributeoffset
+//followed by attributes
+//http://amanda.secured.org/ntfs-mft-record-parsing-parser/
+//https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
     if pFileRecord^.Flags=$1 then begin //
+      //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
+      //https://docs.microsoft.com/fr-fr/windows/desktop/DevNotes/attribute-list-entry
 
+      //StandardInformationAttributeData
       StandardInformationAttributeData := FindAttributeByType(MFTData, atAttributeStandardInformation);
       if StandardInformationAttributeData<>nil then begin
         New(pStandardInformationAttribute);
@@ -449,12 +470,15 @@ CURRENT_DRIVE :=drive; //'c:'
         // Gets Creation & LastChange Times
            FileCreationTime := Int64TimeToDateTime(pStandardInformationAttribute^.CreationTime);
            FileChangeTime := Int64TimeToDateTime(pStandardInformationAttribute^.ChangeTime);
+           LastWriteTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastWriteTime);
+           LastAccessTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastAccessTime);
         Dispose(pStandardInformationAttribute);
       end else begin
         Dispose(pFileRecord);
         continue;
       end;
 
+      //FileNameAttributeData
       FileNameAttributeData := FindAttributeByType(MFTData, atAttributeFileName, true);
       if FileNameAttributeData<>nil then begin
         New(pFileNameAttribute);
@@ -473,11 +497,50 @@ CURRENT_DRIVE :=drive; //'c:'
         continue;
       end;
 
-      DataAttributeHeader := FindAttributeByType(MFTData, atAttributeData);
-      if DataAttributeHeader<>nil then begin
+      //DataAttributeHeader
+      //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
+      DataAttributeHeader := FindAttributeByType(MFTData, atAttributeData,false,@AttributeOffset);
+      if DataAttributeHeader<>nil then
+      begin
         New(pDataAttributeHeader);
         ZeroMemory(pDataAttributeHeader, SizeOf(TRECORD_ATTRIBUTE));
         CopyMemory(pDataAttributeHeader, @DataAttributeHeader[0], SizeOf(TRECORD_ATTRIBUTE));
+        //writeln(inttohex(ord(DataAttributeHeader[0]),1)); -> $80
+        //https://www.writeblocked.org/resources/NTFS_CHEAT_SHEETS.pdf
+        //resident attribute header
+        if pDataAttributeHeader^.NonResident=0 then
+           begin
+           CopyMemory(@datasize, @DataAttributeHeader[$10], 4);
+           CopyMemory(@contentoffset, @DataAttributeHeader[$14], 2); //usually 24
+           location:='0x'+inttohex(CurrentRecordLocator+AttributeOffset+contentoffset,8);
+           //writeln(inttohex(CurrentRecordLocator+AttributeOffset+contentoffset,8));
+           end;
+        //non resident attribute header
+        if pDataAttributeHeader^.NonResident=1 then
+           begin
+           //run list at offset $40
+           //writeln(inttohex(CurrentRecordLocator+AttributeOffset+$40,8));
+           datarun:=ord(MFTData [AttributeOffset+$40]); //ab
+           datalen:=datarun shr 4; //hi = a //number of clusters
+           dataoffset:=datarun and $f; //lo = b  //lcn
+           //writeln(inttohex(datarun,1));
+           //writeln(datalen);
+           //writeln(dataoffset);
+
+           //CopyMemory(@i64size,@MFTData [AttributeOffset+$40+1],datalen);
+           //CopyMemory(@i64offset,@MFTData [AttributeOffset+$40+1+datalen],i64offset);
+           location:='';
+           try
+           if dataoffset>0 then for j:=dataoffset-1 downto 0 do location:=location+inttohex(ord(MFTData [AttributeOffset+$40+1+datalen+j]),1);
+           if location<>'' then
+             begin
+             location:='$'+location;
+             location:='vcn='+inttostr(strtoint(location));
+             end;
+           finally
+           end;
+
+           end;
         // Gets the File Size : there is a little trick to prevent us from loading another data structure
         // which would depend on the value of the Non-Resident Flag...
         // A concrete example greatly helps comprehension of the following line !
@@ -485,7 +548,8 @@ CURRENT_DRIVE :=drive; //'c:'
                                  (pDataAttributeHeader^.NonResident+$1)*$4 );
            FileSize := 0;
            for i:=Length(FileSizeArray)-1 downto 0 do FileSize := (FileSize shl 8)+Ord(FileSizeArray[i]);
-        Dispose(pDataAttributeHeader);
+           bresident:= pDataAttributeHeader^.NonResident=0 ;
+           Dispose(pDataAttributeHeader);
       end else begin
         Dispose(pFileRecord);
         continue;
@@ -493,9 +557,9 @@ CURRENT_DRIVE :=drive; //'c:'
 
       if (filter<>'') then
       begin
-      if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttohex(CurrentRecordLocator,8));
+      if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
       end
-      else log(fileName+','+filepath+','+IntToStr(FileSize)+','+FormatDateTime('c',FileCreationTime)+','+FormatDateTime('c',FileCreationTime)+','+inttohex(CurrentRecordLocator,8));
+      else log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
 
       end;
 
