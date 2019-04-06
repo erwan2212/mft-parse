@@ -414,7 +414,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
-  log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident');
+  log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Main Loop
