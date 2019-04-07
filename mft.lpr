@@ -397,7 +397,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Clears and prepares the PATHS array
   PATHS := nil;
 
-  if 1=1 then //RetrieveDirectoryTreeCB.Checked then
+  if 1=1 then //RetrieveDirectoryTree
   begin
     Log('Tree structure requested : Initializing data container...');
     Setlength(PATHS,MASTER_FILE_TABLE_RECORD_COUNT+1);
@@ -487,7 +487,7 @@ CURRENT_DRIVE :=drive; //'c:'
         // Gets the File Name, which begins at offset $5A of this attribute
            FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
            // Gets the File Path
-           if 1=1 then //RetrieveDirectoryTreeCB.Checked then
+           if 1=1 then //RetrieveDirectoryTree
              FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'
            else
              FilePath := '*\';
