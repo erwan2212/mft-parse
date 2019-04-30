@@ -24,7 +24,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="g:"/>
+        <CommandLineParams Value="e: disk2.img datarun"/>
       </local>
     </RunParams>
     <Units Count="2">
@@ -59,7 +59,7 @@
     </CodeGeneration>
   </CompilerOptions>
   <Debugging>
-    <Exceptions Count="3">
+    <Exceptions Count="4">
       <Item1>
         <Name Value="EAbort"/>
       </Item1>
@@ -69,6 +69,9 @@
       <Item3>
         <Name Value="EFOpenError"/>
       </Item3>
+      <Item4>
+        <Name Value="Exception"/>
+      </Item4>
     </Exceptions>
   </Debugging>
 </CONFIG>

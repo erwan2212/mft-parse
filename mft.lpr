@@ -28,6 +28,16 @@ var
   //
   filter:string='';
 
+function LeftPad(value:integer; length:integer=8; pad:char='0'): string; overload;
+begin
+   result := RightStr(StringOfChar(pad,length) + IntToStr(value), length );
+end;
+
+function LeftPad(value: string; length:integer=8; pad:char='0'): string; overload;
+begin
+   result := RightStr(StringOfChar(pad,length) + value, length );
+end;
+
 procedure FixupUpdateSequence(var RecordData: TDynamicCharArray);
 var
   pFileRecord: ^TFILE_RECORD;
@@ -41,7 +51,8 @@ begin
   CopyMemory(pFileRecord, @RecordData[0], SizeOf(TFILE_RECORD));
 
   with pFileRecord^.Header do begin
-    if Identifier[1]+Identifier[2]+Identifier[3]+Identifier[4] <> 'FILE' then begin
+    if Identifier[1]+Identifier[2]+Identifier[3]+Identifier[4] <> 'FILE' then
+       begin
       Dispose(pFileRecord);
       raise Exception.Create('Unable to Fixup the Update Sequence : Invalid Record Data :'+
                              ' No FILE Identifier found');
@@ -257,7 +268,7 @@ begin
   writeln(msg);
 end;
 
-procedure mft_parse(DRIVE:string;filter:string='');
+procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false);
 var
 hDevice : THandle;
 
@@ -283,12 +294,12 @@ CurrentRecordCounter: integer;
   FileSize: Int64;
   FileSizeArray : TDynamicCharArray;
 
-  i:integer;
-  location
-    :string;
+  i,count:integer;
+  location,runlen,runoffset:string;
+  current,prev:long;
   tid,datasize:dword;
   bresident:boolean;
-  AttributeOffset,contentoffset:word;
+  AttributeOffset,contentoffset,p:word;
   datarun,datalen,dataoffset,j:byte;
 begin
 
@@ -414,12 +425,14 @@ CURRENT_DRIVE :=drive; //'c:'
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
-  log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
+  if bdatarun =false
+     then log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
-  for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do begin
+  for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
+  begin
 
     if (CurrentRecordCounter mod 256) = 0 then
     begin // Refreshes File Counter every 256 records
@@ -457,13 +470,15 @@ CURRENT_DRIVE :=drive; //'c:'
 //followed by attributes
 //http://amanda.secured.org/ntfs-mft-record-parsing-parser/
 //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
-    if pFileRecord^.Flags=$1 then begin //
+    if pFileRecord^.Flags=$1 then
+    begin
       //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
       //https://docs.microsoft.com/fr-fr/windows/desktop/DevNotes/attribute-list-entry
 
       //StandardInformationAttributeData
       StandardInformationAttributeData := FindAttributeByType(MFTData, atAttributeStandardInformation);
-      if StandardInformationAttributeData<>nil then begin
+      if StandardInformationAttributeData<>nil then
+      begin
         New(pStandardInformationAttribute);
         ZeroMemory(pStandardInformationAttribute, SizeOf(TSTANDARD_INFORMATION));
         CopyMemory(pStandardInformationAttribute, @StandardInformationAttributeData[0],SizeOf(TSTANDARD_INFORMATION));
@@ -473,14 +488,17 @@ CURRENT_DRIVE :=drive; //'c:'
            LastWriteTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastWriteTime);
            LastAccessTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastAccessTime);
         Dispose(pStandardInformationAttribute);
-      end else begin
+      end
+      else //if StandardInformationAttributeData<>nil then
+      begin
         Dispose(pFileRecord);
         continue;
       end;
 
       //FileNameAttributeData
       FileNameAttributeData := FindAttributeByType(MFTData, atAttributeFileName, true);
-      if FileNameAttributeData<>nil then begin
+      if FileNameAttributeData<>nil then
+      begin
         New(pFileNameAttribute);
         ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
         CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
@@ -492,7 +510,9 @@ CURRENT_DRIVE :=drive; //'c:'
            else
              FilePath := '*\';
         Dispose(pFileNameAttribute);
-      end else begin
+      end
+      else // if FileNameAttributeData<>nil then
+      begin
         Dispose(pFileRecord);
         continue;
       end;
@@ -502,6 +522,7 @@ CURRENT_DRIVE :=drive; //'c:'
       DataAttributeHeader := FindAttributeByType(MFTData, atAttributeData,false,@AttributeOffset);
       if DataAttributeHeader<>nil then
       begin
+        location:='';
         New(pDataAttributeHeader);
         ZeroMemory(pDataAttributeHeader, SizeOf(TRECORD_ATTRIBUTE));
         CopyMemory(pDataAttributeHeader, @DataAttributeHeader[0], SizeOf(TRECORD_ATTRIBUTE));
@@ -520,27 +541,36 @@ CURRENT_DRIVE :=drive; //'c:'
            begin
            //run list at offset $40
            //writeln(inttohex(CurrentRecordLocator+AttributeOffset+$40,8));
-           datarun:=ord(MFTData [AttributeOffset+$40]); //ab
+           location:='N/A';
+           if (bdatarun=true) and (pos(lowercase(filter),lowercase(filename))>0) then
+           begin
+           datarun:=0;p:=0;prev:=0;count:=0;
+           while 1=1  do
+           begin
+           runlen:='';runoffset:='';
+           datarun:=ord(MFTData [AttributeOffset+$40+p]); //ab //$42 -> 4 & 2  lets read 2=clusters lets read 4=lcn
+           if (datarun=$ff) or (datarun=0) then break;
            datalen:=datarun shr 4; //hi = a //number of clusters
            dataoffset:=datarun and $f; //lo = b  //lcn
-           //writeln(inttohex(datarun,1));
-           //writeln(datalen);
-           //writeln(dataoffset);
-
-           //CopyMemory(@i64size,@MFTData [AttributeOffset+$40+1],datalen);
-           //CopyMemory(@i64offset,@MFTData [AttributeOffset+$40+1+datalen],i64offset);
-           location:='';
-           try
-           if dataoffset>0 then for j:=dataoffset-1 downto 0 do location:=location+inttohex(ord(MFTData [AttributeOffset+$40+1+datalen+j]),1);
-           if location<>'' then
-             begin
-             location:='$'+location;
-             location:='vcn='+inttostr(strtoint(location));
-             end;
-           finally
-           end;
-
-           end;
+           //try
+           if dataoffset>0 then for j:=dataoffset-1 downto 0 do runlen:=runlen+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+j+p]),1),2,'0');
+           if datalen>0 then for j:=datalen-1 downto 0 do runoffset:=runoffset+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+dataoffset+j+p]),1),2,'0');
+           if (length(runoffset)=6) and (strtoint('$'+copy(runoffset ,1,2))>128)
+               then runoffset :='FF'+runoffset else runoffset :='00'+runoffset;
+           //high bit (most left) of last byte becoming first byte = 1 -> ff
+           //ff -> signed, 00 -> unsigned
+           current:=strtoint('$'+runoffset);
+           current:=current+prev;
+           //location:='vcn=$'+runoffset;
+           writeln(inttostr(count)+': Clusters: 0x'+inttohex(strtoint('$'+runlen),4)+' LCN: 0x'+inttohex(current,4));
+           //finally
+           //end;//try
+           p:= p+datalen+dataoffset+1 ;
+           prev:=current;
+           inc(count);
+           end; //while datarun<>$ff then
+           end;  //if pos(filter,filename)>0 then
+           end;  //if pDataAttributeHeader^.NonResident=1 then
         // Gets the File Size : there is a little trick to prevent us from loading another data structure
         // which would depend on the value of the Non-Resident Flag...
         // A concrete example greatly helps comprehension of the following line !
@@ -550,16 +580,21 @@ CURRENT_DRIVE :=drive; //'c:'
            for i:=Length(FileSizeArray)-1 downto 0 do FileSize := (FileSize shl 8)+Ord(FileSizeArray[i]);
            bresident:= pDataAttributeHeader^.NonResident=0 ;
            Dispose(pDataAttributeHeader);
-      end else begin
+      end
+      else //if DataAttributeHeader<>nil then
+      begin
         Dispose(pFileRecord);
         continue;
       end;
 
+      if bdatarun=false then
+      begin
       if (filter<>'') then
       begin
       if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
       end
       else log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
+      end; //if bdatarun=true then
 
       end;
 
@@ -587,7 +622,9 @@ begin
      writeln('mft-parse x: [filename_filter]');
      exit;
      end;
-  if paramcount=2 then filter:=paramstr(2);
-  mft_parse (paramstr(1),filter);
+  if paramcount>=2 then filter:=paramstr(2);
+  if pos('datarun',cmdline)>0
+     then mft_parse (paramstr(1),filter,true)
+     else mft_parse (paramstr(1),filter,false);
 end.
 
