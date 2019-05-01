@@ -73,6 +73,7 @@ type
     LSN : Int64;
   end;
 
+  //https://flatcap.org/linux-ntfs/ntfs/concepts/file_record.html
 type
   TFILE_RECORD = packed record
     Header: TNTFS_RECORD_HEADER;
@@ -85,6 +86,8 @@ type
 	  BytesAllocated : DWord;
 	  BaseFileRecord : Int64;
 	  NextAttributeID : Word;
+          dummy:word;
+          MFT_Record_No:dword;
   end;
 
 type

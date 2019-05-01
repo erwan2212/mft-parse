@@ -268,7 +268,7 @@ begin
   writeln(msg);
 end;
 
-procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false);
+procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false);
 var
 hDevice : THandle;
 
@@ -301,11 +301,12 @@ CurrentRecordCounter: integer;
   bresident:boolean;
   AttributeOffset,contentoffset,p:word;
   datarun,datalen,dataoffset,j:byte;
+  before,after:QWord;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
   hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,
-                         nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+                         nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
   if (hDevice = INVALID_HANDLE_VALUE) then
   begin
   writeln('INVALID_HANDLE_VALUE');
@@ -317,6 +318,7 @@ CURRENT_DRIVE :=drive; //'c:'
   SetFilePointer(hDevice, 0, nil, FILE_BEGIN);
   ReadFile(hDevice,PBootSequence^, 512,dwread,nil);
 
+  writeln('***************************************');
     with PBootSequence^ do begin
     if  (cOEMID[1]+cOEMID[2]+cOEMID[3]+cOEMID[4] <> 'NTFS') then begin
       Log('Error : This is not a NTFS disk !');
@@ -400,15 +402,15 @@ CURRENT_DRIVE :=drive; //'c:'
 
   MASTER_FILE_TABLE_END := MASTER_FILE_TABLE_LOCATION + MASTER_FILE_TABLE_SIZE;
   MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE * BytesPerCluster) div BytesPerFileRecord;
-  Log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE)+' Clusters');
-  log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE*BytesPerCluster)+' bytes');
+  Log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE)+' Clusters'+' - '+IntToStr(MASTER_FILE_TABLE_SIZE*BytesPerCluster)+' bytes');
   log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
+  writeln('***************************************');
 
   // Clears and prepares the PATHS array
   PATHS := nil;
 
-  if 1=1 then //RetrieveDirectoryTree
+  if (1=1) and (bdatarun=false) then //RetrieveDirectoryTree
   begin
     Log('Tree structure requested : Initializing data container...');
     Setlength(PATHS,MASTER_FILE_TABLE_RECORD_COUNT+1);
@@ -425,12 +427,14 @@ CURRENT_DRIVE :=drive; //'c:'
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
-  if bdatarun =false
-     then log('fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
-
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
+  before:=GetTickCount64 ;
+  writeln('***************************************');
+  if bdatarun =false
+     then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
+
   for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
   begin
 
@@ -470,12 +474,37 @@ CURRENT_DRIVE :=drive; //'c:'
 //followed by attributes
 //http://amanda.secured.org/ntfs-mft-record-parsing-parser/
 //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
-    if pFileRecord^.Flags=$1 then
+    if pFileRecord^.Flags=word(bdeleted=false) then //$1
     begin
       //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
       //https://docs.microsoft.com/fr-fr/windows/desktop/DevNotes/attribute-list-entry
 
+
+      //FileNameAttributeData
+      FileNameAttributeData := FindAttributeByType(MFTData, atAttributeFileName, true);
+      if FileNameAttributeData<>nil then
+      begin
+        New(pFileNameAttribute);
+        ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
+        CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
+        // Gets the File Name, which begins at offset $5A of this attribute
+           FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
+           // Gets the File Path
+           if 1=1 then //RetrieveDirectoryTree //cost about 40%...
+             FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'
+           else
+             FilePath := '*\';
+        Dispose(pFileNameAttribute);
+      end
+      else // if FileNameAttributeData<>nil then
+      begin
+        Dispose(pFileRecord);
+        continue;
+      end;
+
       //StandardInformationAttributeData
+      if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
+      begin
       StandardInformationAttributeData := FindAttributeByType(MFTData, atAttributeStandardInformation);
       if StandardInformationAttributeData<>nil then
       begin
@@ -494,31 +523,12 @@ CURRENT_DRIVE :=drive; //'c:'
         Dispose(pFileRecord);
         continue;
       end;
-
-      //FileNameAttributeData
-      FileNameAttributeData := FindAttributeByType(MFTData, atAttributeFileName, true);
-      if FileNameAttributeData<>nil then
-      begin
-        New(pFileNameAttribute);
-        ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
-        CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
-        // Gets the File Name, which begins at offset $5A of this attribute
-           FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
-           // Gets the File Path
-           if 1=1 then //RetrieveDirectoryTree
-             FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'
-           else
-             FilePath := '*\';
-        Dispose(pFileNameAttribute);
-      end
-      else // if FileNameAttributeData<>nil then
-      begin
-        Dispose(pFileRecord);
-        continue;
-      end;
+      end; //if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
 
       //DataAttributeHeader
       //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
+      if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
+      begin
       DataAttributeHeader := FindAttributeByType(MFTData, atAttributeData,false,@AttributeOffset);
       if DataAttributeHeader<>nil then
       begin
@@ -544,6 +554,7 @@ CURRENT_DRIVE :=drive; //'c:'
            location:='N/A';
            if (bdatarun=true) and (pos(lowercase(filter),lowercase(filename))>0) then
            begin
+           writeln(filename);
            datarun:=0;p:=0;prev:=0;count:=0;
            while 1=1  do
            begin
@@ -552,10 +563,12 @@ CURRENT_DRIVE :=drive; //'c:'
            if (datarun=$ff) or (datarun=0) then break;
            datalen:=datarun shr 4; //hi = a //number of clusters
            dataoffset:=datarun and $f; //lo = b  //lcn
+           if (datalen>4) or (dataoffset>4) then begin writeln('invalid datarun:'+inttohex(datarun,1));break;end;
+           //writeln(inttohex(datarun,1)+' '+inttostr(datalen)+' '+inttostr(dataoffset));
            //try
            if dataoffset>0 then for j:=dataoffset-1 downto 0 do runlen:=runlen+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+j+p]),1),2,'0');
            if datalen>0 then for j:=datalen-1 downto 0 do runoffset:=runoffset+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+dataoffset+j+p]),1),2,'0');
-           if (length(runoffset)=6) and (strtoint('$'+copy(runoffset ,1,2))>128)
+           if (length(runoffset)=6) and (strtoint('$'+copy(runoffset ,1,2))>=$80)
                then runoffset :='FF'+runoffset else runoffset :='00'+runoffset;
            //high bit (most left) of last byte becoming first byte = 1 -> ff
            //ff -> signed, 00 -> unsigned
@@ -586,29 +599,32 @@ CURRENT_DRIVE :=drive; //'c:'
         Dispose(pFileRecord);
         continue;
       end;
+      end; //if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
 
       if bdatarun=false then
       begin
       if (filter<>'') then
       begin
-      if (pos(lowercase(filter),lowercase(filename))>0) then log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
+      if (pos(lowercase(filter),lowercase(filename))>0) then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
       end
-      else log(fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
+      else log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
       end; //if bdatarun=true then
 
-      end;
+      end;//if pFileRecord^.Flags=$1 then
 
     Dispose(pFileRecord);
 
 
 
-  end;
+  end;// for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
+  after:=GetTickCount64;
+  writeln('***************************************');
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
 
 
 
   //**********************************************************************************
-    Log('All File Records Analyzed ('+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT)+') - Found '  );
+    Log('All File Records Analyzed ('+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT)+') in '+inttostr(after-before)+' ms'  );
 
   Dispose(PBootSequence);
 
@@ -619,12 +635,13 @@ begin
   if paramcount=0 then
      begin
      writeln('mft-parse by erwan2212@gmail.com');
-     writeln('mft-parse x: [filename_filter]');
+     writeln('mft-parse x: [a_filename_substring|*] [datarun] [deleted]');
      exit;
      end;
   if paramcount>=2 then filter:=paramstr(2);
-  if pos('datarun',cmdline)>0
-     then mft_parse (paramstr(1),filter,true)
-     else mft_parse (paramstr(1),filter,false);
+  if filter='*' then filter:='';
+
+ mft_parse (paramstr(1),filter,pos('datarun',cmdline)>0,pos('deleted',cmdline)>0)
+
 end.
 
