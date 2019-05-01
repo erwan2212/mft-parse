@@ -270,7 +270,7 @@ end;
 
 procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false);
 var
-hDevice : THandle;
+hDevice,dst : THandle;
 
 pBootSequence: ^TBOOT_SEQUENCE;
 pFileRecord: ^TFILE_RECORD;
@@ -279,7 +279,7 @@ pMFTNonResidentAttribute : ^TNONRESIDENT_ATTRIBUTE;
 pFileNameAttribute : ^TFILENAME_ATTRIBUTE;
 pDataAttributeHeader: ^TRECORD_ATTRIBUTE;
 
-dwread:dword;
+dwread,dwwritten:dword;
 MFTData: TDynamicCharArray;
 StandardInformationAttributeData: TDynamicCharArray;
 MFTAttributeData: TDynamicCharArray;
@@ -302,6 +302,7 @@ CurrentRecordCounter: integer;
   AttributeOffset,contentoffset,p:word;
   datarun,datalen,dataoffset,j:byte;
   before,after:QWord;
+  buf:array of byte;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
@@ -349,6 +350,7 @@ CURRENT_DRIVE :=drive; //'c:'
   //************************************
   MASTER_FILE_TABLE_LOCATION := PBootSequence^.MftStartLcn * PBootSequence^.wBytesPerSector
                                 * PBootSequence^.bSectorsPerCluster;
+  Dispose(PBootSequence);
 
   log('MFT Location : $'+IntToHex(MASTER_FILE_TABLE_LOCATION,2));
 
@@ -403,7 +405,32 @@ CURRENT_DRIVE :=drive; //'c:'
   MASTER_FILE_TABLE_END := MASTER_FILE_TABLE_LOCATION + MASTER_FILE_TABLE_SIZE;
   MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE * BytesPerCluster) div BytesPerFileRecord;
   Log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE)+' Clusters'+' - '+IntToStr(MASTER_FILE_TABLE_SIZE*BytesPerCluster)+' bytes');
+  //log('MFT LowVCN , HighVCN : '+inttostr(pMFTNonResidentAttribute^.LowVCN)+' , '+inttostr(pMFTNonResidentAttribute^.HighVCN )) ;
+  if MASTER_FILE_TABLE_SIZE=pMFTNonResidentAttribute^.HighVCN
+     then log('MFT is contiguous') else log('MFT is fragmented');
   log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
+
+  //test - backup mft - mft could be fragmented and we should go thru the run list of $mft...
+  if filter='!backup!' then
+  begin
+  dst := CreateFile( PChar('mft.dmp' ), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
+                         nil, CREATE_ALWAYS , FILE_FLAG_SEQUENTIAL_SCAN, 0);
+  SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,
+                 @Int64Rec(MASTER_FILE_TABLE_LOCATION).Hi, FILE_BEGIN);
+  setlength(buf,BytesPerCluster);
+  for i:=0 to MASTER_FILE_TABLE_SIZE -1 do
+  begin
+  if Readfile(hDevice, buf[0], BytesPerCluster, dwread, nil)
+     then writefile(dst,buf[0],dwread,dwwritten,nil)
+     else begin writeln('writefile failed');break;end;
+  end;
+  closehandle(dst);
+  closehandle(hDevice );
+  writeln('mft backuped to mft.dmp');
+  exit;
+  end;
+
+  //
 
   writeln('***************************************');
 
@@ -526,6 +553,7 @@ CURRENT_DRIVE :=drive; //'c:'
       end; //if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
 
       //DataAttributeHeader
+      //in the case of ADS, there could be another DATA attribute
       //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
       if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
       begin
@@ -626,7 +654,7 @@ CURRENT_DRIVE :=drive; //'c:'
   //**********************************************************************************
     Log('All File Records Analyzed ('+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT)+') in '+inttostr(after-before)+' ms'  );
 
-  Dispose(PBootSequence);
+
 
   Closehandle(hDevice);
 end;

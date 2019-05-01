@@ -24,7 +24,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="e: disk2.img"/>
+        <CommandLineParams Value="c: disk2"/>
       </local>
     </RunParams>
     <Units Count="2">
