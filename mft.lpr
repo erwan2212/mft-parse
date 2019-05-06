@@ -27,6 +27,8 @@ var
   CURRENT_DRIVE:string;
   //
   filter:string='';
+  drive:string='';
+  c:byte;
 
 function LeftPad(value:integer; length:integer=8; pad:char='0'): string; overload;
 begin
@@ -668,10 +670,17 @@ begin
      writeln('DT stands for deleted i.e file clusters can be reused by the system');
      exit;
      end;
-  if paramcount>=2 then filter:=paramstr(2);
+  //if paramcount>=2 then filter:=paramstr(2);
+  //writeln(paramcount);
+  for c:=1 to paramcount  do
+      begin
+      //writeln(paramstr(c));
+      if (pos('/',paramstr(c))=0) and (drive<>'') then filter:=paramstr(c);
+      if (pos('/',paramstr(c))=0) and (drive='') then drive:=paramstr(c);
+      end;
   if filter='*' then filter:='';
 
- mft_parse (paramstr(1),filter,pos('/DR',cmdline)>0,pos('/DT',cmdline)>0)
+ mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0)
 
 end.
 
