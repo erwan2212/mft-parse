@@ -663,7 +663,7 @@ begin
   if paramcount=0 then
      begin
      writeln('mft-parse by erwan2212@gmail.com');
-     writeln('mft-parse x: [a_filename_substring|*] [/DR] [/DT]');
+     writeln('mft-parse [/DR] [/DT] x: [a_filename_substring|*]');
      writeln('DR stands for datarun i.e clusters used by a file');
      writeln('DT stands for deleted i.e file clusters can be reused by the system');
      exit;
