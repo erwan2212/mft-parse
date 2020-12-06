@@ -29,6 +29,8 @@ var
   filter:string='';
   drive:string='';
   c:byte;
+  //
+  hdevice:thandle=thandle(-1);
 
 function LeftPad(value:integer; length:integer=8; pad:char='0'): string; overload;
 begin
@@ -162,7 +164,7 @@ var
   ParentRecordNumber: integer;
   LocalParentReference: Int64;
   ParentName: string;
-  hDevice: THandle;
+  //hDevice: THandle;
   dwread: LongWord;
   ParentRecordLocator: Int64;
   MFTData: TDynamicCharArray;
@@ -195,10 +197,12 @@ begin
     // WARNING: The path may NOT be correct if a directory record has been replaced by another!
     // Any error will lead to answer '*\' which actually means "no way to determine further the parent"
 
-    hDevice := CreateFile(PChar('\\.\'+CURRENT_DRIVE), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,
-                          nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    if (hDevice = INVALID_HANDLE_VALUE) then begin
-      Closehandle(hDevice);
+
+    //hDevice := CreateFile(PChar('\\.\'+CURRENT_DRIVE), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    if (hDevice = INVALID_HANDLE_VALUE) then
+    begin
+      //Closehandle(hDevice);
+
       //PATHS[ParentRecordNumber] := '*'; // We do NOT record this in the table, because
                                           // there is NOT any record failure : the HDD
                                           // just can't be opened now...
@@ -212,26 +216,25 @@ begin
 
     // Memory Allocation / Prepares the buffer structure which will contain the File Record
     SetLength(MFTData,BytesPerFileRecord);
-    SetFilePointer(hDevice, Int64Rec(ParentRecordLocator).Lo,
-                   @Int64Rec(ParentRecordLocator).Hi, FILE_BEGIN);
+    SetFilePointer(hDevice, Int64Rec(ParentRecordLocator).Lo,@Int64Rec(ParentRecordLocator).Hi, FILE_BEGIN);
     Readfile(hDevice, PChar(MFTData)^, BytesPerFileRecord, dwread, nil);
 
     try
       FixupUpdateSequence(MFTData);
     except
-      Closehandle(hDevice);
+      //Closehandle(hDevice);
       PATHS[ParentRecordNumber] := '*';
       result := '*';
       exit;
     end;
 
     New(pFileRecord);
-    ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
+    //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
     if (pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3) then begin // If it is not a directory
       // The parent directory doesn't exist anymore (it has been overlapped)
       Dispose(pFileRecord);
-      Closehandle(hDevice);
+      //Closehandle(hDevice);
       PATHS[ParentRecordNumber] := '*';
       result := '*';
       exit;
@@ -241,7 +244,7 @@ begin
     FileNameAttributeData := FindAttributeByType(MFTData, atAttributeFileName, true);
     if FileNameAttributeData<>nil then begin
       New(pFileNameAttribute);
-      ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
+      //ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
       CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
       // Gets the Path Name, which begins at offset $5A of this attribute
          ParentName := WideString(Copy(FileNameAttributeData, $5A, 1+pFileNameAttribute^.NameLength*2));
@@ -249,14 +252,14 @@ begin
          LocalParentReference := pFileNameAttribute^.DirectoryFileReferenceNumber;
       Dispose(pFileNameAttribute);
     end else begin
-      Closehandle(hDevice);
+      //Closehandle(hDevice);
       PATHS[ParentRecordNumber] := '*';
       result := '*';
       exit;
     end;
 
     // Recursive Call
-    Closehandle(hDevice);
+    //Closehandle(hDevice);
     PATHS[ParentRecordNumber] := GetFilePath(LocalParentReference)+'\'+ParentName;
     result := PATHS[ParentRecordNumber];
 
@@ -272,7 +275,7 @@ end;
 
 procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false);
 var
-hDevice,dst : THandle;
+{hDevice,}dst : THandle;
 
 pBootSequence: ^TBOOT_SEQUENCE;
 pFileRecord: ^TFILE_RECORD;
@@ -413,6 +416,7 @@ CURRENT_DRIVE :=drive; //'c:'
   log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
   //test - backup mft - mft could be fragmented and we should go thru the run list of $mft...
+  //rawcopy could be use to dump a file from the entryid
   if filter='!backup!' then
   begin
   dst := CreateFile( PChar('mft.dmp' ), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
@@ -470,6 +474,7 @@ CURRENT_DRIVE :=drive; //'c:'
     if (CurrentRecordCounter mod 256) = 0 then
     begin // Refreshes File Counter every 256 records
        //log('Analyzing File Record '+IntToStr(CurrentRecordCounter+1)+' out of ' +IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
+       //writeln(inttostr(GetTickCount64));
     end;
 
     CurrentRecordLocator := MASTER_FILE_TABLE_LOCATION + CurrentRecordCounter*BytesPerFileRecord;
@@ -495,7 +500,7 @@ CURRENT_DRIVE :=drive; //'c:'
 
 
     New(pFileRecord);
-    ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
+    //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD)); //save a few cycles?
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
 
 
@@ -514,12 +519,12 @@ CURRENT_DRIVE :=drive; //'c:'
       if FileNameAttributeData<>nil then
       begin
         New(pFileNameAttribute);
-        ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
+        //ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
         CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
         // Gets the File Name, which begins at offset $5A of this attribute
            FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
            // Gets the File Path
-           if 1=1 then //RetrieveDirectoryTree //cost about 40%...
+           if 1=1 then //RetrieveDirectoryTree //very very costy !
              FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'
            else
              FilePath := '*\';
@@ -538,7 +543,7 @@ CURRENT_DRIVE :=drive; //'c:'
       if StandardInformationAttributeData<>nil then
       begin
         New(pStandardInformationAttribute);
-        ZeroMemory(pStandardInformationAttribute, SizeOf(TSTANDARD_INFORMATION));
+        //ZeroMemory(pStandardInformationAttribute, SizeOf(TSTANDARD_INFORMATION));
         CopyMemory(pStandardInformationAttribute, @StandardInformationAttributeData[0],SizeOf(TSTANDARD_INFORMATION));
         // Gets Creation & LastChange Times
            FileCreationTime := Int64TimeToDateTime(pStandardInformationAttribute^.CreationTime);
@@ -564,7 +569,7 @@ CURRENT_DRIVE :=drive; //'c:'
       begin
         location:='';
         New(pDataAttributeHeader);
-        ZeroMemory(pDataAttributeHeader, SizeOf(TRECORD_ATTRIBUTE));
+        //ZeroMemory(pDataAttributeHeader, SizeOf(TRECORD_ATTRIBUTE));
         CopyMemory(pDataAttributeHeader, @DataAttributeHeader[0], SizeOf(TRECORD_ATTRIBUTE));
         //writeln(inttohex(ord(DataAttributeHeader[0]),1)); -> $80
         //https://www.writeblocked.org/resources/NTFS_CHEAT_SHEETS.pdf
