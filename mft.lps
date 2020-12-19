@@ -9,9 +9,9 @@
         <Filename Value="mft.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="272"/>
-        <CursorPos X="2" Y="274"/>
-        <UsageCount Value="65"/>
+        <TopLine Value="604"/>
+        <CursorPos X="44" Y="616"/>
+        <UsageCount Value="85"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
@@ -21,7 +21,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="36"/>
         <CursorPos X="5" Y="48"/>
-        <UsageCount Value="65"/>
+        <UsageCount Value="85"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
@@ -30,7 +30,7 @@
         <EditorIndex Value="2"/>
         <TopLine Value="55"/>
         <CursorPos X="6" Y="67"/>
-        <UsageCount Value="17"/>
+        <UsageCount Value="26"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -38,138 +38,149 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="453"/>
         <CursorPos X="3" Y="465"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="3"/>
       </Unit3>
       <Unit4>
         <Filename Value="C:\FPC\3.0.0\source\rtl\objpas\sysutils\sysutilh.inc"/>
         <EditorIndex Value="1"/>
         <TopLine Value="16"/>
         <CursorPos X="31" Y="29"/>
-        <UsageCount Value="16"/>
+        <UsageCount Value="25"/>
         <Loaded Value="True"/>
       </Unit4>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="mft.lpr"/>
-        <Caret Line="263" TopLine="251"/>
+        <Caret Line="598" TopLine="591"/>
       </Position1>
       <Position2>
         <Filename Value="mft.lpr"/>
-        <Caret Line="668" Column="82" TopLine="651"/>
+        <Caret Line="599" TopLine="591"/>
       </Position2>
       <Position3>
         <Filename Value="mft.lpr"/>
-        <Caret Line="667" Column="67" TopLine="653"/>
+        <Caret Line="600" TopLine="591"/>
       </Position3>
       <Position4>
         <Filename Value="mft.lpr"/>
-        <Caret Line="676" Column="49" TopLine="659"/>
+        <Caret Line="601" TopLine="591"/>
       </Position4>
       <Position5>
         <Filename Value="mft.lpr"/>
-        <Caret Line="674" TopLine="659"/>
+        <Caret Line="604" TopLine="591"/>
       </Position5>
       <Position6>
         <Filename Value="mft.lpr"/>
-        <Caret Line="676" TopLine="659"/>
+        <Caret Line="605" TopLine="591"/>
       </Position6>
       <Position7>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" TopLine="659"/>
+        <Caret Line="613" TopLine="591"/>
       </Position7>
       <Position8>
         <Filename Value="mft.lpr"/>
-        <Caret Line="679" TopLine="659"/>
+        <Caret Line="606" Column="59" TopLine="591"/>
       </Position8>
       <Position9>
         <Filename Value="mft.lpr"/>
-        <Caret Line="681" Column="18" TopLine="660"/>
+        <Caret Line="597" TopLine="591"/>
       </Position9>
       <Position10>
         <Filename Value="mft.lpr"/>
-        <Caret Line="676" TopLine="660"/>
+        <Caret Line="598" TopLine="591"/>
       </Position10>
       <Position11>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" TopLine="660"/>
+        <Caret Line="599" TopLine="591"/>
       </Position11>
       <Position12>
         <Filename Value="mft.lpr"/>
-        <Caret Line="675" TopLine="660"/>
+        <Caret Line="600" TopLine="591"/>
       </Position12>
       <Position13>
         <Filename Value="mft.lpr"/>
-        <Caret Line="671" Column="34" TopLine="660"/>
+        <Caret Line="601" TopLine="591"/>
       </Position13>
       <Position14>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" Column="28" TopLine="660"/>
+        <Caret Line="604" TopLine="591"/>
       </Position14>
       <Position15>
         <Filename Value="mft.lpr"/>
-        <Caret Line="669" Column="37" TopLine="660"/>
+        <Caret Line="605" TopLine="591"/>
       </Position15>
       <Position16>
         <Filename Value="mft.lpr"/>
-        <Caret Line="675" TopLine="660"/>
+        <Caret Line="607" TopLine="591"/>
       </Position16>
       <Position17>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" TopLine="660"/>
+        <Caret Line="608" TopLine="591"/>
       </Position17>
       <Position18>
         <Filename Value="mft.lpr"/>
-        <Caret Line="678" TopLine="660"/>
+        <Caret Line="612" TopLine="591"/>
       </Position18>
       <Position19>
         <Filename Value="mft.lpr"/>
-        <Caret Line="675" Column="26" TopLine="660"/>
+        <Caret Line="613" TopLine="591"/>
       </Position19>
       <Position20>
         <Filename Value="mft.lpr"/>
-        <Caret Line="671" Column="38" TopLine="660"/>
+        <Caret Line="611" Column="41" TopLine="597"/>
       </Position20>
       <Position21>
         <Filename Value="mft.lpr"/>
-        <Caret Line="675" TopLine="660"/>
+        <Caret Line="606" TopLine="597"/>
       </Position21>
       <Position22>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" TopLine="660"/>
+        <Caret Line="602" Column="28" TopLine="586"/>
       </Position22>
       <Position23>
         <Filename Value="mft.lpr"/>
-        <Caret Line="678" TopLine="660"/>
+        <Caret Line="598" TopLine="586"/>
       </Position23>
       <Position24>
         <Filename Value="mft.lpr"/>
-        <Caret Line="679" TopLine="660"/>
+        <Caret Line="599" TopLine="586"/>
       </Position24>
       <Position25>
         <Filename Value="mft.lpr"/>
-        <Caret Line="677" TopLine="660"/>
+        <Caret Line="600" TopLine="586"/>
       </Position25>
       <Position26>
         <Filename Value="mft.lpr"/>
-        <Caret Line="678" TopLine="660"/>
+        <Caret Line="601" TopLine="586"/>
       </Position26>
       <Position27>
         <Filename Value="mft.lpr"/>
-        <Caret Line="679" TopLine="660"/>
+        <Caret Line="604" TopLine="586"/>
       </Position27>
       <Position28>
         <Filename Value="mft.lpr"/>
-        <Caret Line="681" TopLine="661"/>
+        <Caret Line="605" TopLine="586"/>
       </Position28>
       <Position29>
         <Filename Value="mft.lpr"/>
-        <Caret Line="673" Column="29" TopLine="658"/>
+        <Caret Line="316" Column="32" TopLine="299"/>
       </Position29>
       <Position30>
         <Filename Value="mft.lpr"/>
-        <Caret Line="525" Column="61" TopLine="506"/>
+        <Caret Line="620" Column="104" TopLine="599"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints Count="1">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="mft.lpr"/>
+        <Line Value="606"/>
+      </Item1>
+    </BreakPoints>
+  </Debugging>
 </CONFIG>

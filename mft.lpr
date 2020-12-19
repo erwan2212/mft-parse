@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 program mft;
 
 {$mode objfpc}{$H+}
@@ -32,6 +31,15 @@ var
   c:byte;
   //
   hdevice:thandle=thandle(-1);
+
+  function negative (input:string):longword;
+  begin
+    case length(input) of
+         4:result:=$ffff-strtoint('$'+input)+1; //2 bytes
+         6:result:=$ffffff-strtoint('$'+input)+1; //3 bytes
+         8:result:=$ffffffff-strtoint('$'+input)+1; //4 bytes
+    end;
+  end;
 
 function LeftPad(value:integer; length:integer=8; pad:char='0'): string; overload;
 begin
@@ -302,7 +310,7 @@ CurrentRecordCounter: integer;
 
   i,count:integer;
   location,runlen,runoffset:string;
-  current,prev:long;
+  current,prev,vcn:long;
   tid,datasize:dword;
   bresident:boolean;
   AttributeOffset,contentoffset,p:word;
@@ -312,7 +320,7 @@ CurrentRecordCounter: integer;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
-  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,
+  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
   if (hDevice = INVALID_HANDLE_VALUE) then
   begin
@@ -591,7 +599,7 @@ CURRENT_DRIVE :=drive; //'c:'
            if (bdatarun=true) and (pos(lowercase(filter),lowercase(filename))>0) then
            begin
            writeln(filename);
-           datarun:=0;p:=0;prev:=0;count:=0;
+           datarun:=0;p:=0;prev:=0;count:=0;vcn:=0;
            while 1=1  do
            begin
            runlen:='';runoffset:='';
@@ -604,14 +612,18 @@ CURRENT_DRIVE :=drive; //'c:'
            //try
            if dataoffset>0 then for j:=dataoffset-1 downto 0 do runlen:=runlen+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+j+p]),1),2,'0');
            if datalen>0 then for j:=datalen-1 downto 0 do runoffset:=runoffset+leftpad(inttohex(ord(MFTData [AttributeOffset+$40+1+dataoffset+j+p]),1),2,'0');
-           if (length(runoffset)=6) and (strtoint('$'+copy(runoffset ,1,2))>=$80)
-               then runoffset :='FF'+runoffset else runoffset :='00'+runoffset;
-           //high bit (most left) of last byte becoming first byte = 1 -> ff
            //ff -> signed, 00 -> unsigned
-           current:=strtoint('$'+runoffset);
+           //if (length(runoffset)=6 ) and (strtoint('$'+copy(runoffset ,1,2))>=$80)
+           //    then runoffset :='FF'+runoffset else runoffset :='00'+runoffset;
+           //current:=strtoint('$'+runoffset);
+           if (strtoint('$'+copy(runoffset ,1,2))>=$80)
+              then current:=-negative(runoffset)
+              else current:=strtoint('$'+runoffset);
+           //high bit (most left) of last byte becoming first byte = 1 -> ff
+           //writeln(runoffset+#9+inttostr(strtoint('$'+runoffset)));
            current:=current+prev;
-           //location:='vcn=$'+runoffset;
-           writeln(inttostr(count)+': Clusters: 0x'+inttohex(strtoint('$'+runlen),4)+' LCN: 0x'+inttohex(current,4));
+           writeln('#:'+inttostr(count)+#9+'VCN:'+inttostr(vcn)+#9+'LCN:'+inttostr(current)+#9+'Clusters:'+inttostr(strtoint('$'+runlen)));
+           vcn:=vcn+strtoint('$'+runlen);
            //finally
            //end;//try
            p:= p+datalen+dataoffset+1 ;
@@ -1359,7 +1371,12 @@ CURRENT_DRIVE :=drive; //'c:'
   Closehandle(hDevice);
 end;
 
+
+
 begin
+
+
+
   if paramcount=0 then
      begin
      writeln('mft-parse by erwan2212@gmail.com');
@@ -1382,4 +1399,4 @@ begin
 
 end.
 
->>>>>>> 994ebb40a862340a4c8b6b175a80ce0ff36e5d27
+
