@@ -31,6 +31,30 @@ var
   c:byte;
   //
   hdevice:thandle=thandle(-1);
+  hfile:thandle=thandle(-1);
+
+  function backup(lcn:int64;nbclusters,ClusterSize:int64):boolean;
+  var
+  Bytes: ULONG;
+  Buff: PByte;
+  i:longword;
+  offset:large_integer;
+  begin
+        result:=false;
+        //GetMem(Buff, ClusterSize); //allocmem would create a zerofilled buffer
+        buff:=allocmem(ClusterSize ); //not in a loop would be preferrable
+        offset.QuadPart :=lcn*ClusterSize;
+        SetFilePointer(hdevice, Offset.LowPart, @Offset.HighPart, FILE_BEGIN);
+        for i:=1 to nbclusters do
+        begin
+        if ReadFile(hdevice, Buff^, ClusterSize, Bytes, nil) then
+          begin
+          WriteFile(hFile, Buff^, ClusterSize, Bytes, nil);
+          end;
+        end; //for
+        FreeMem(Buff);
+        result:=true;
+  end;
 
   function negative (input:string):longword;
   begin
@@ -596,6 +620,7 @@ CURRENT_DRIVE :=drive; //'c:'
            //run list at offset $40
            //writeln(inttohex(CurrentRecordLocator+AttributeOffset+$40,8));
            location:='N/A';
+           //datarun has been requested
            if (bdatarun=true) and (pos(lowercase(filter),lowercase(filename))>0) then
            begin
            writeln(filename);
@@ -629,7 +654,15 @@ CURRENT_DRIVE :=drive; //'c:'
            p:= p+datalen+dataoffset+1 ;
            prev:=current;
            inc(count);
+           //backup has been requested
+           if 1=0 then
+              begin
+              if hfile=thandle(-1) then hFile := CreateFile('e:\test.dmp', GENERIC_WRITE, 0, nil, CREATE_NEW, 0, 0);
+              backup(current,strtoint('$'+runlen),BytesPerCluster);
+              end;
+           //
            end; //while datarun<>$ff then
+           if hfile<>thandle(-1) then closehandle(hfile);
            end;  //if pos(filter,filename)>0 then
            end;  //if pDataAttributeHeader^.NonResident=1 then
         // Gets the File Size : there is a little trick to prevent us from loading another data structure
