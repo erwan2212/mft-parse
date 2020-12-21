@@ -24,7 +24,6 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="/dr e: Windows 10 x64 1803-s001"/>
       </local>
     </RunParams>
     <Units Count="2">
