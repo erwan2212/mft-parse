@@ -501,7 +501,7 @@ CURRENT_DRIVE :=drive; //'c:'
   before:=GetTickCount64 ;
   writeln('***************************************');
   if bdatarun =false
-     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|CurrentRecordLocator|resident|location');
+     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastAccessTime|CurrentRecordLocator|resident|location');
 
   for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
   begin
@@ -581,6 +581,9 @@ CURRENT_DRIVE :=drive; //'c:'
         //ZeroMemory(pStandardInformationAttribute, SizeOf(TSTANDARD_INFORMATION));
         CopyMemory(pStandardInformationAttribute, @StandardInformationAttributeData[0],SizeOf(TSTANDARD_INFORMATION));
         // Gets Creation & LastChange Times
+        //if you move a file to a different partition/disk on your computer,
+        //the CreationTime will be updated, but because the content hasn't changed, the LastWriteTime won't be.
+        //So you end up in a situation where your CreationTime is later than your LastWriteTime
            FileCreationTime := Int64TimeToDateTime(pStandardInformationAttribute^.CreationTime);
            FileChangeTime := Int64TimeToDateTime(pStandardInformationAttribute^.ChangeTime);
            LastWriteTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastWriteTime);
@@ -689,14 +692,14 @@ CURRENT_DRIVE :=drive; //'c:'
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime));
+            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
+                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastAccessTime));
          end
          else
          begin
          if sql=false
-            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime));
+            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
+            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastAccessTime));
          end;
 
 
@@ -711,8 +714,6 @@ CURRENT_DRIVE :=drive; //'c:'
   end;// for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
   after:=GetTickCount64;
   writeln('***************************************');
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
-
 
 
   //**********************************************************************************
@@ -728,10 +729,11 @@ end;
 begin
   if paramcount=0 then
      begin
-     writeln('mft-parse 0.2 by erwan2212@gmail.com');
-     writeln('mft-parse [/DR] [/DT] x: [a_filename_substring|*]');
+     writeln('mft-parse 0.3 by erwan2212@gmail.com');
+     writeln('mft-parse [/DR] [/DT] [/SQL] x: [a_filename_substring|*]');
      writeln('DR stands for datarun i.e clusters used by a file');
      writeln('DT stands for deleted i.e file clusters can be reused by the system');
+     writeln('SQL will dump records to mft.db3 sqlite DB');
      exit;
      end;
   //if paramcount>=2 then filter:=paramstr(2);

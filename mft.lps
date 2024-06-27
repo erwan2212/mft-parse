@@ -8,27 +8,26 @@
       <Unit0>
         <Filename Value="mft.lpr"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="695"/>
-        <CursorPos X="18" Y="693"/>
-        <UsageCount Value="93"/>
+        <TopLine Value="694"/>
+        <CursorPos X="243" Y="695"/>
+        <UsageCount Value="95"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
       <Unit1>
         <Filename Value="utils.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="3"/>
-        <UsageCount Value="93"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="95"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="C:\FPC\3.0.0\source\rtl\win\wininc\base.inc"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="55"/>
         <CursorPos X="6" Y="67"/>
         <UsageCount Value="30"/>
-        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="C:\FPC\3.0.0\source\rtl\inc\systemh.inc"/>
@@ -39,20 +38,19 @@
       </Unit3>
       <Unit4>
         <Filename Value="C:\FPC\3.0.0\source\rtl\objpas\sysutils\sysutilh.inc"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="16"/>
         <CursorPos X="31" Y="29"/>
         <UsageCount Value="29"/>
-        <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="utilsdb.pas"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
-        <TopLine Value="19"/>
-        <CursorPos X="41" Y="96"/>
-        <UsageCount Value="25"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="16"/>
+        <CursorPos X="128" Y="19"/>
+        <UsageCount Value="26"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
@@ -60,10 +58,10 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="31"/>
         <CursorPos X="3" Y="41"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="9"/>
       </Unit6>
     </Units>
-    <JumpHistory Count="29" HistoryIndex="28">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="mft.lpr"/>
         <Caret Line="375" Column="54" TopLine="366"/>
@@ -180,6 +178,10 @@
         <Filename Value="utilsdb.pas"/>
         <Caret Line="40" Column="52" TopLine="19"/>
       </Position29>
+      <Position30>
+        <Filename Value="utilsdb.pas"/>
+        <Caret Line="78" Column="35" TopLine="52"/>
+      </Position30>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>
