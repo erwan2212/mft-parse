@@ -5,3 +5,4 @@ backup
 *.ppu
 *.exe
 *.db3
+*.db3-journal
