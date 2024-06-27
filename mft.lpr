@@ -689,11 +689,17 @@ CURRENT_DRIVE :=drive; //'c:'
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
+            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
+                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime));
          end
-         else if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location);
+         else
+         begin
+         if sql=false
+            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
+            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime));
+         end;
 
-      if sql=true then insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime));
+
       end; //if bdatarun=true then
 
       end;//if pFileRecord^.Flags=$1 then
