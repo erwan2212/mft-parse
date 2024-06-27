@@ -4,3 +4,4 @@ backup
 *.compiled
 *.ppu
 *.exe
+*.db3
