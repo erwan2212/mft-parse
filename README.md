@@ -10,6 +10,8 @@ FileCreationTime will be update if you move a file to a different partition/disk
 So you can end up in a situation where your CreationTime is later than your LastWriteTime.<br>
 Indeed under windows FileCreationTime is the time that the file was created on a disk partition.<br>
 <br>
-FileChangeTime is the same as LastWriteTime except that it will also be update when metadata is changed (r/w, acl, etc).<br>
+LastWriteTime is the time that the file content was updated.<br>
+<br>
+FileChangeTime is the same as LastWriteTime except that it will also be updated when metadata is changed (r/w, acl, etc).<br>
 <br>
 LastAccessTime cannot be trusted as it can be disabled or not all windows OS's have the same settings here.<br>
