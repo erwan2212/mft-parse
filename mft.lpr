@@ -22,7 +22,7 @@ var
   MASTER_FILE_TABLE_LOCATION : Int64;             //    \
   MASTER_FILE_TABLE_END : Int64;                  //     |__    MFT Location & Contents
   MASTER_FILE_TABLE_SIZE : Int64;                 //     |      Information
-  MASTER_FILE_TABLE_RECORD_COUNT : integer;       //    /
+  MASTER_FILE_TABLE_RECORD_COUNT : int64; //integer;       //    /
   //
   PATHS : array of string;
   CURRENT_DRIVE:string;
@@ -334,7 +334,7 @@ CurrentRecordCounter: integer;
   FileSize: Int64;
   FileSizeArray : TDynamicCharArray;
 
-  i,count:integer;
+  i,count,percentage:integer;
   location,runlen,runoffset:string;
   current,prev,vcn:long;
   tid,datasize:dword;
@@ -709,9 +709,14 @@ CURRENT_DRIVE :=drive; //'c:'
 
     Dispose(pFileRecord);
 
-
+    if sql=true then
+      begin
+      percentage := Round((CurrentRecordCounter / MASTER_FILE_TABLE_RECORD_COUNT) * 100);
+      if (percentage mod 10 = 0) and (percentage <> 0) then  Write('.');
+      end;
 
   end;// for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
+  if sql=true then writeln;
   after:=GetTickCount64;
   writeln('***************************************');
 
