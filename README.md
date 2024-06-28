@@ -6,7 +6,7 @@ select.ps1 is a powershell example to query the mft.db3.<br>
 select-BIG25.ps1 will output top 25 biggest files.<br>
 select-OLD25.ps1 will output top 25 oldest files.<br>
 select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
-you can download from here system.data.sqlite for powershell : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
+you can download from here system.data.sqlite for powershell (recommanded : .net 4.6) : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
 <br>
 Some notes/thoughts:<br>
 <br>
