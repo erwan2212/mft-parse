@@ -346,7 +346,7 @@ CurrentRecordCounter: integer;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
-  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,
+  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ {or FILE_SHARE_WRITE},
                          nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
   if (hDevice = INVALID_HANDLE_VALUE) then
   begin
