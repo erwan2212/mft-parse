@@ -6,3 +6,4 @@ backup
 *.exe
 *.db3
 *.db3-journal
+*.csv
