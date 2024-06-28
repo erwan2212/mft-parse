@@ -8,8 +8,8 @@ you can download from here system.data.sqlite for powershell : https://system.da
 Some notes/thoughts:<br>
 <br>
 FileCreationTime (under windows) is the time that the file was created on a disk partition.<br>
-FileCreationTime will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
-So you can end up in a situation where your CreationTime is later than your LastWriteTime.<br>
+It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
+So you can end up in a situation where your FileCreationTime is later than your LastWriteTime.<br>
 <br>
 LastWriteTime is the time that the file content was updated.<br>
 <br>
