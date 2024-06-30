@@ -16,13 +16,13 @@ var
   Trans: TSQLTransaction;
   Query: TSQLQuery=nil;
 
-  function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastAccessTime:string):boolean;
+  function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword):boolean;
   function create_db:boolean;
   function close_db:boolean;
 
 implementation
 
-function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastAccessTime:string):boolean;
+function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword):boolean;
 var
   //Query: TSQLQuery;
   dummy:dword;
@@ -33,15 +33,17 @@ begin
    Query.Database := Conn;
 
    // Insertion d'un enregistrement
-         Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastAccessTime) ' +
-                           'VALUES (:MFT_Record_No, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastAccessTime)';
+         Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes) ' +
+                           'VALUES (:MFT_Record_No, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastWriteTime, :LastAccessTime, :FileAttributes)';
          Query.Params.ParamByName('MFT_Record_No').AsInteger := MFT_Record_No;
          Query.Params.ParamByName('FileName').AsString := FileName;
          Query.Params.ParamByName('FilePath').AsString := FilePath;
          Query.Params.ParamByName('FileSize').AsLargeInt  := FileSize;
          Query.Params.ParamByName('FileCreationTime').AsString := FileCreationTime;
          Query.Params.ParamByName('FileChangeTime').AsString := FileChangeTime;
+         Query.Params.ParamByName('LastWriteTime').AsString := LastWriteTime;
          Query.Params.ParamByName('LastAccessTime').AsString := LastAccessTime;
+         Query.Params.ParamByName('FileAttributes').AsInteger := FileAttributes;
          Query.ExecSQL;
 
          // Validation de la transaction
@@ -76,7 +78,9 @@ begin
                     'FileSize INTEGER, ' +
                     'FileCreationTime TEXT, ' +
                     'FileChangeTime TEXT, ' +
-                    'LastAccessTime TEXT)';
+                    'LastWriteTime TEXT, ' +
+                    'LastAccessTime TEXT, '+
+                    'FileAttributes INTEGER)';
    Query.ExecSQL;
    Trans.Commit;
    //Query.Free;

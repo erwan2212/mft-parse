@@ -332,6 +332,7 @@ CurrentRecordCounter: integer;
   FilePath: string;
   FileCreationTime, FileChangeTime,LastWriteTime, LastAccessTime   : TDateTime;
   FileSize: Int64;
+  FileAttributes:dword;
   FileSizeArray : TDynamicCharArray;
 
   i,count,percentage:integer;
@@ -588,6 +589,9 @@ CURRENT_DRIVE :=drive; //'c:'
            FileChangeTime := Int64TimeToDateTime(pStandardInformationAttribute^.ChangeTime);
            LastWriteTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastWriteTime);
            LastAccessTime := Int64TimeToDateTime(pStandardInformationAttribute^.LastAccessTime);
+           //writeln(pStandardInformationAttribute^.Attribute.Flags) ; compressed/encrypted/sparse?
+           //https://www.futurelearn.com/info/courses/introduction-to-malware-investigations/0/steps/147110#:~:text=The%20Standard%20Information%20attribute%20contains,resides%20within%20the%20attribute%20itself.
+           FileAttributes:=pStandardInformationAttribute^.FileAttributes ; //compressed/encrypted/sparse...
         Dispose(pStandardInformationAttribute);
       end
       else //if StandardInformationAttributeData<>nil then
@@ -693,13 +697,13 @@ CURRENT_DRIVE :=drive; //'c:'
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
             then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastAccessTime));
+                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes );
          end
          else
          begin
          if sql=false
             then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastAccessTime));
+            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes );
          end;
 
 
