@@ -20,7 +20,7 @@ So you can end up in a situation where your FileCreationTime is later than your 
 <br>
 <b>LastAccessTime</b> cannot be trusted as it can be disabled or not all windows OS's have the same settings here.<br>
 <br>
-FileAttributes is also stored - below the possible values<br>
+<b>FileAttributes</b> is also stored - below the possible values<br>
 <br>
 Value	Description<br>
 0x0001	Read only<br>
