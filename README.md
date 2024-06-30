@@ -16,7 +16,7 @@ So you can end up in a situation where your FileCreationTime is later than your 
 <br>
 <b>FileChangeTime</b> is the time that the file content was updated.<br>
 <br>
-<b>LastWriteTime</b> is the same as LastWriteTime except that it will also be updated when metadata is changed (r/w, acl, etc). <br>
+<b>LastWriteTime</b> is the same as FileChangeTime except that it will also be updated when metadata is changed (r/w, acl, etc). <br>
 This date and time refers to when the MFT record itself was last changed. This date and time field is not displayed to a user.<br>
 <br>
 <b>LastAccessTime</b> cannot be trusted as it can be disabled or not all windows OS's have the same settings here.<br>
