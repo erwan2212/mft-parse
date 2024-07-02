@@ -429,6 +429,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Quickly checks the reliability of the process (if the MFT is sparse, encrypted or compressed all the
   // data structures we're going to deal with are not reliable!)
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
+  Log('MFTNonResidentAttribute.Attribute.Flags:'+inttohex(pMFTNonResidentAttribute^.Attribute.Flags,4));
   if (pMFTNonResidentAttribute^.Attribute.Flags = $8000)
      or (pMFTNonResidentAttribute^.Attribute.Flags = $4000)
      or (pMFTNonResidentAttribute^.Attribute.Flags = $0001) then begin
