@@ -243,6 +243,7 @@ begin
                                           // just can't be opened now...
                                           // (even if it is still opened during the research process)
                                           // I actually think this will never happen! But who knows?
+      writeln('GetFilePath:INVALID_HANDLE_VALUE');
       result := '*';
       exit;
     end;
@@ -347,11 +348,11 @@ CurrentRecordCounter: integer;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
-  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ {or FILE_SHARE_WRITE},
-                         nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
+  hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,
+                         nil, OPEN_EXISTING, 0{FILE_FLAG_SEQUENTIAL_SCAN}, 0);
   if (hDevice = INVALID_HANDLE_VALUE) then
   begin
-  writeln('INVALID_HANDLE_VALUE');
+  writeln('INVALID_HANDLE_VALUE,'+inttostr(GetLastError) );
   exit;
   end;
  //******************************************************
