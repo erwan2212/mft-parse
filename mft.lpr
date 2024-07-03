@@ -252,7 +252,12 @@ begin
 
     // Memory Allocation / Prepares the buffer structure which will contain the File Record
     SetLength(MFTData,BytesPerFileRecord);
-    SetFilePointer(hDevice, Int64Rec(ParentRecordLocator).Lo,@Int64Rec(ParentRecordLocator).Hi, FILE_BEGIN);
+    if SetFilePointer(hDevice, Int64Rec(ParentRecordLocator).Lo,@Int64Rec(ParentRecordLocator).Hi, FILE_BEGIN)=DWORD(-1) then
+       begin
+       PATHS[ParentRecordNumber] := '*';
+       result := '*';
+       exit;
+       end;
     Readfile(hDevice, PChar(MFTData)^, BytesPerFileRecord, dwread, nil);
 
     try
@@ -267,7 +272,8 @@ begin
     New(pFileRecord);
     //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
-    if (pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3) then begin // If it is not a directory
+    if (pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3) and (pFileRecord^.Header.Identifier <>'FILE') then
+    begin // If it is not a directory
       // The parent directory doesn't exist anymore (it has been overlapped)
       Dispose(pFileRecord);
       //Closehandle(hDevice);
