@@ -504,11 +504,29 @@ CURRENT_DRIVE :=drive; //'c:'
 
   //
 
+
+
+  //**********************************************************************************
+
+
+  if FileExists (CURRENT_DRIVE+'\mft.dmp') then
+     begin
+     writeln('opening mft.dmp');
+     closehandle(hdevice);
+     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ ,
+                              nil, OPEN_EXISTING, 0, 0);
+     if hdevice=thandle(-1) then begin writeln('invalid handle,'+inttostr(getlasterror));exit; end;
+     MASTER_FILE_TABLE_LOCATION:=0;
+     MASTER_FILE_TABLE_SIZE:=GetFileSizeByHandle(hdevice);
+     writeln('size:'+inttostr(MASTER_FILE_TABLE_SIZE));
+     MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE  ) div BytesPerFileRecord;
+     log('->Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
+     end;
+
   writeln('***************************************');
 
   // Clears and prepares the PATHS array
   PATHS := nil;
-
   if (1=1) and (bdatarun=false) then //RetrieveDirectoryTree
   begin
     Log('Tree structure requested : Initializing data container...');
@@ -519,9 +537,12 @@ CURRENT_DRIVE :=drive; //'c:'
     Log('No tree structure requested.');
   end;
 
-  //**********************************************************************************
-
+    before:=GetTickCount64 ;
   Log('Scanning for files, Please wait...');
+  writeln('***************************************');
+
+  if bdatarun =false
+     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastAccessTime|CurrentRecordLocator|resident|location');
 
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
@@ -529,19 +550,6 @@ CURRENT_DRIVE :=drive; //'c:'
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
-  before:=GetTickCount64 ;
-  writeln('***************************************');
-  if bdatarun =false
-     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastAccessTime|CurrentRecordLocator|resident|location');
-
-  if FileExists ('mft.dmp') then
-     begin
-     MASTER_FILE_TABLE_LOCATION:=0;
-     closehandle(hdevice);
-     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ ,
-                              nil, OPEN_EXISTING, 0, 0);
-     if hdevice=thandle(-1) then begin writeln('invalid handle');exit; end;
-     end;
 
   for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
   begin
