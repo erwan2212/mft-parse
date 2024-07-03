@@ -151,6 +151,7 @@ type
   const   FSCTL_GET_RETRIEVAL_POINTERS = 589939; //(($00000009) shr 16) or ((28) shr 14) or ((3) shr 2) or (0);
 
 function Int64TimeToDateTime(aFileTime: Int64): TDateTime;
+function GetFileSizeByHandle(FileHandle: THandle): Int64;
 
 implementation
 
@@ -165,6 +166,21 @@ begin
   SystemTimeToTzSpecificLocalTime(nil, UTCTime, LocalTime);
   result := SystemTimeToDateTime(LocalTime);
 end;
+
+function GetFileSizeByHandle(FileHandle: THandle): Int64;
+var
+  FileSizeHigh: DWORD;
+  FileSizeLow: DWORD;
+begin
+  FileSizeLow := GetFileSize(FileHandle, @FileSizeHigh);
+  if FileSizeLow = INVALID_FILE_SIZE then
+  begin
+    Result := -1;
+    Exit;
+  end;
+  Result := (Int64(FileSizeHigh) shl 32) or FileSizeLow;
+end;
+
 
 end.
 
