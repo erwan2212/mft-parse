@@ -77,7 +77,8 @@ begin
   Query.Database := Conn;
 
   Query.SQL.Text := 'CREATE TABLE IF NOT EXISTS files (' +
-                    'MFT_Record_No INTEGER PRIMARY KEY, ' +
+                    'ID INTEGER PRIMARY KEY, ' +
+                    'MFT_Record_No INTEGER, ' +
                     'FileName TEXT, ' +
                     'FilePath TEXT, ' +
                     'FileSize INTEGER, ' +

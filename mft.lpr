@@ -467,6 +467,7 @@ CURRENT_DRIVE :=drive; //'c:'
      then log('MFT is contiguous') else
      begin
      log('MFT is fragmented');
+     if not FileExists (CURRENT_DRIVE+'\mft.dmp') then writeln('dump mft.dmp to the selected root drive');
        {outbuf:=AllocMem(sizeof(RETRIEVAL_POINTERS_BUFFER));
        bytes:=0;
        InBuf.StartingVcn.QuadPart := 0;
@@ -768,7 +769,7 @@ CURRENT_DRIVE :=drive; //'c:'
     if sql=true then
       begin
       percentage := Round((CurrentRecordCounter / MASTER_FILE_TABLE_RECORD_COUNT) * 100);
-      if (percentage mod 10 = 0) and (percentage <> 0) then  Write('.');
+      if (percentage mod 10 = 0) and (percentage <> 0) then SetConsoleTitle(pchar('Progress:'+inttostr(percentage))); //Write('.');
       end;
 
   end;// for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
@@ -783,6 +784,7 @@ CURRENT_DRIVE :=drive; //'c:'
 
 
   Closehandle(hDevice);
+  SetConsoleTitle(pchar('cmd.exe')); //Write('.');
 end;
 
 
