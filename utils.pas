@@ -130,6 +130,26 @@ type
 	  USN: Int64;
   end;
 
+  STARTING_VCN_INPUT_BUFFER = record
+    StartingVcn: LARGE_INTEGER;
+  end;
+  PSTARTING_VCN_INPUT_BUFFER = ^STARTING_VCN_INPUT_BUFFER;
+
+  Extent = record
+    NextVcn: LARGE_INTEGER;
+    Lcn: LARGE_INTEGER;
+  end;
+
+  RETRIEVAL_POINTERS_BUFFER = record
+    ExtentCount: DWORD;
+    StartingVcn: LARGE_INTEGER;
+    Extents: array[0..0] of Extent;
+  end;
+  PRETRIEVAL_POINTERS_BUFFER = ^RETRIEVAL_POINTERS_BUFFER;
+  RETRIEVAL_POINTERS_BUFFERS=array of RETRIEVAL_POINTERS_BUFFER;
+
+  const   FSCTL_GET_RETRIEVAL_POINTERS = 589939; //(($00000009) shr 16) or ((28) shr 14) or ((3) shr 2) or (0);
+
 function Int64TimeToDateTime(aFileTime: Int64): TDateTime;
 
 implementation

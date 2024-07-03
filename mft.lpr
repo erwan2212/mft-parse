@@ -345,6 +345,10 @@ CurrentRecordCounter: integer;
   datarun,datalen,dataoffset,j:byte;
   before,after:QWord;
   buf:array of byte;
+  //
+  InBuf: STARTING_VCN_INPUT_BUFFER;
+  OutBuf: PRETRIEVAL_POINTERS_BUFFER;
+  Bytes: ULONG;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
@@ -399,8 +403,10 @@ CURRENT_DRIVE :=drive; //'c:'
 
 
   SetLength(MFTData,BytesPerFileRecord);
-  SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,
-                 @Int64Rec(MASTER_FILE_TABLE_LOCATION).Hi, FILE_BEGIN);
+  SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,@Int64Rec(MASTER_FILE_TABLE_LOCATION).Hi, FILE_BEGIN);
+  //closehandle(hdevice);
+  //hDevice := CreateFile( PChar(CURRENT_DRIVE+'\$MFT' ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,nil, OPEN_EXISTING, 0, 0);
+
   Readfile(hDevice, PChar(MFTData)^, BytesPerFileRecord, dwread, nil);
   Log('MFT Data Read : '+IntToStr(dwread)+' Bytes');
 
@@ -438,8 +444,8 @@ CURRENT_DRIVE :=drive; //'c:'
     exit;
   end;
   // - - - - - -
-  writeln('pMFTNonResidentAttribute^.HighVCN:'+inttostr(pMFTNonResidentAttribute^.HighVCN));
-  writeln('pMFTNonResidentAttribute^.LowVCN:'+inttostr(pMFTNonResidentAttribute^.LowVCN));
+  //writeln('pMFTNonResidentAttribute^.HighVCN:'+inttostr(pMFTNonResidentAttribute^.HighVCN));
+  //writeln('pMFTNonResidentAttribute^.LowVCN:'+inttostr(pMFTNonResidentAttribute^.LowVCN));
   MASTER_FILE_TABLE_SIZE := pMFTNonResidentAttribute^.HighVCN - pMFTNonResidentAttribute^.LowVCN + 1;
                                                              { \_____________ = 0 _____________/ }
 
@@ -452,7 +458,27 @@ CURRENT_DRIVE :=drive; //'c:'
   Log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE)+' Clusters'+' - '+IntToStr(MASTER_FILE_TABLE_SIZE*BytesPerCluster)+' bytes');
   //log('MFT LowVCN , HighVCN : '+inttostr(pMFTNonResidentAttribute^.LowVCN)+' , '+inttostr(pMFTNonResidentAttribute^.HighVCN )) ;
   if MASTER_FILE_TABLE_SIZE=pMFTNonResidentAttribute^.HighVCN
-     then log('MFT is contiguous') else log('MFT is fragmented');
+     then log('MFT is contiguous') else
+     begin
+     log('MFT is fragmented');
+       {outbuf:=AllocMem(sizeof(RETRIEVAL_POINTERS_BUFFER));
+       bytes:=0;
+       InBuf.StartingVcn.QuadPart := 0;
+       hfile := CreateFile( PChar(CURRENT_DRIVE+'\$mft' ), {0}FILE_READ_ATTRIBUTES, {0}FILE_SHARE_READ ,
+                              nil, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, 0);
+       if (hfile)=thandle(-1) then exit;
+       repeat
+       DeviceIoControl(hfile, FSCTL_GET_RETRIEVAL_POINTERS, @InBuf, SizeOf(InBuf), OutBuf, sizeof(RETRIEVAL_POINTERS_BUFFER), Bytes, nil);
+       //writeln(getlasterror);
+       if (getlasterror<>ERROR_MORE_DATA) then break ;
+       InBuf.StartingVCN.QuadPart := OutBuf^.Extents[0].NextVCN.QuadPart;
+       //size
+       writeln('VCN:'+inttostr(InBuf.StartingVCN.QuadPart)+' - LCN:'+inttostr(OutBuf^.Extents[0].LCN.QuadPart ));
+       until getlasterror <> ERROR_MORE_DATA;
+       FreeMem(OutBuf);
+       closehandle(hfile);
+       }
+     end;
   log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
 
   //test - backup mft - mft could be fragmented and we should go thru the run list of $mft...
@@ -507,6 +533,15 @@ CURRENT_DRIVE :=drive; //'c:'
   writeln('***************************************');
   if bdatarun =false
      then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastAccessTime|CurrentRecordLocator|resident|location');
+
+  if FileExists ('mft.dmp') then
+     begin
+     MASTER_FILE_TABLE_LOCATION:=0;
+     closehandle(hdevice);
+     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ ,
+                              nil, OPEN_EXISTING, 0, 0);
+     if hdevice=thandle(-1) then begin writeln('invalid handle');exit; end;
+     end;
 
   for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
   begin
