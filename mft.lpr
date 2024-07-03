@@ -810,8 +810,8 @@ begin
 
   if pos('/SQL',uppercase(cmdline))>0 then sql:=true;
 
- if sql=true then create_db;
+ if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
  mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0);
- if sql=true then close_db;
+ if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
 
 end.

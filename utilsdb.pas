@@ -44,7 +44,12 @@ begin
          Query.Params.ParamByName('LastWriteTime').AsString := LastWriteTime;
          Query.Params.ParamByName('LastAccessTime').AsString := LastAccessTime;
          Query.Params.ParamByName('FileAttributes').AsInteger := FileAttributes;
+
+         try
          Query.ExecSQL;
+         except
+         on e:exception do writeln(inttostr(MFT_Record_No)+' - '+e.message);
+         end;
 
          // Validation de la transaction
          //Trans.Commit;
