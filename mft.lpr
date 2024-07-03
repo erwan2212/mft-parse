@@ -513,8 +513,7 @@ CURRENT_DRIVE :=drive; //'c:'
      begin
      writeln('opening mft.dmp');
      closehandle(hdevice);
-     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ ,
-                              nil, OPEN_EXISTING, 0, 0);
+     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ , nil, OPEN_EXISTING, 0, 0);
      if hdevice=thandle(-1) then begin writeln('invalid handle,'+inttostr(getlasterror));exit; end;
      MASTER_FILE_TABLE_LOCATION:=0;
      MASTER_FILE_TABLE_SIZE:=GetFileSizeByHandle(hdevice);
