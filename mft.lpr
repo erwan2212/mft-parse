@@ -35,7 +35,7 @@ var
   hdevice:thandle=thandle(-1);
   hfile:thandle=thandle(-1);
 
-  function backup(lcn:int64;nbclusters,ClusterSize:int64):boolean;
+  function do_backup(lcn:int64;nbclusters,ClusterSize:int64):boolean;
   var
   Bytes: ULONG;
   Buff: PByte;
@@ -272,7 +272,7 @@ begin
     New(pFileRecord);
     //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
-    if (pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3) and (pFileRecord^.Header.Identifier <>'FILE') then
+    if ((pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3)) or (pFileRecord^.Header.Identifier <>'FILE') then
     begin // If it is not a directory
       // The parent directory doesn't exist anymore (it has been overlapped)
       Dispose(pFileRecord);
@@ -315,7 +315,7 @@ begin
   writeln(msg);
 end;
 
-procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false);
+procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false;backup:boolean=false);
 var
 {hDevice,}dst : THandle;
 
@@ -352,7 +352,7 @@ CurrentRecordCounter: integer;
   before,after:QWord;
   buf:array of byte;
   //
-  InBuf: STARTING_VCN_INPUT_BUFFER;
+  InBuf: TSTARTING_VCN_INPUT_BUFFER;
   OutBuf: PRETRIEVAL_POINTERS_BUFFER;
   Bytes: ULONG;
 begin
@@ -455,16 +455,17 @@ CURRENT_DRIVE :=drive; //'c:'
   MASTER_FILE_TABLE_SIZE := pMFTNonResidentAttribute^.HighVCN - pMFTNonResidentAttribute^.LowVCN + 1;
                                                              { \_____________ = 0 _____________/ }
 
-
   Dispose(pMFTNonResidentAttribute);
-
 
   MASTER_FILE_TABLE_END := MASTER_FILE_TABLE_LOCATION + MASTER_FILE_TABLE_SIZE;
   MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE * BytesPerCluster) div BytesPerFileRecord;
   Log('MFT Size : '+IntToStr(MASTER_FILE_TABLE_SIZE)+' Clusters'+' - '+IntToStr(MASTER_FILE_TABLE_SIZE*BytesPerCluster)+' bytes');
+  log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
   //log('MFT LowVCN , HighVCN : '+inttostr(pMFTNonResidentAttribute^.LowVCN)+' , '+inttostr(pMFTNonResidentAttribute^.HighVCN )) ;
-  if MASTER_FILE_TABLE_SIZE=pMFTNonResidentAttribute^.HighVCN
-     then log('MFT is contiguous') else
+  //if MASTER_FILE_TABLE_SIZE=pMFTNonResidentAttribute^.HighVCN +1
+  if (IsFileContiguous(CURRENT_DRIVE+'\$mft'))=true
+     then log('MFT is contiguous')
+     else
      begin
      log('MFT is fragmented');
      if not FileExists (CURRENT_DRIVE+'\mft.dmp') then writeln('dump mft.dmp to the selected root drive');
@@ -486,11 +487,11 @@ CURRENT_DRIVE :=drive; //'c:'
        closehandle(hfile);
        }
      end;
-  log('Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
+
 
   //test - backup mft - mft could be fragmented and we should go thru the run list of $mft...
   //rawcopy could be use to dump a file from the entryid
-  if filter='!backup!' then
+  if backup=true then
   begin
   dst := CreateFile( PChar('mft.dmp' ), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, CREATE_ALWAYS , FILE_FLAG_SEQUENTIAL_SCAN, 0);
@@ -518,13 +519,13 @@ CURRENT_DRIVE :=drive; //'c:'
 
   if FileExists (CURRENT_DRIVE+'\mft.dmp') then
      begin
-     writeln('opening mft.dmp');
+     writeln('Opening mft.dmp');
      closehandle(hdevice);
      hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ , nil, OPEN_EXISTING, 0, 0);
      if hdevice=thandle(-1) then begin writeln('invalid handle,'+inttostr(getlasterror));exit; end;
      MASTER_FILE_TABLE_LOCATION:=0;
      MASTER_FILE_TABLE_SIZE:=GetFileSizeByHandle(hdevice);
-     writeln('size:'+inttostr(MASTER_FILE_TABLE_SIZE));
+     writeln('->Size:'+inttostr(MASTER_FILE_TABLE_SIZE)+ ' bytes');
      MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE  ) div BytesPerFileRecord;
      log('->Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
      end;
@@ -720,7 +721,7 @@ CURRENT_DRIVE :=drive; //'c:'
            if 1=0 then
               begin
               if hfile=thandle(-1) then hFile := CreateFile('e:\test.dmp', GENERIC_WRITE, 0, nil, CREATE_NEW, 0, 0);
-              backup(current,strtoint('$'+runlen),BytesPerCluster);
+              do_backup(current,strtoint('$'+runlen),BytesPerCluster);
               end;
            //
            end; //while datarun<>$ff then
@@ -790,6 +791,8 @@ end;
 
 
 begin
+
+
   if paramcount=0 then
      begin
      writeln('mft-parse 0.3 by erwan2212@gmail.com');
@@ -813,7 +816,7 @@ begin
   if pos('/SQL',uppercase(cmdline))>0 then sql:=true;
 
  if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
- mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0);
+ mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0,pos('/BACKUP',uppercase(cmdline))>0);
  if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
 
 end.

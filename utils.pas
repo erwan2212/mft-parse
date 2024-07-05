@@ -130,28 +130,33 @@ type
 	  USN: Int64;
   end;
 
-  STARTING_VCN_INPUT_BUFFER = record
-    StartingVcn: LARGE_INTEGER;
-  end;
-  PSTARTING_VCN_INPUT_BUFFER = ^STARTING_VCN_INPUT_BUFFER;
+  TVCN = Int64;
+  TLCN = Int64;
 
-  Extent = record
-    NextVcn: LARGE_INTEGER;
-    Lcn: LARGE_INTEGER;
+  // Définition de l'extent de récupération des pointeurs
+  TRETRIEVAL_POINTERS_BUFFER_EXTENT = record
+    NextVcn: TVCN;
+    Lcn: TLCN;
   end;
 
-  RETRIEVAL_POINTERS_BUFFER = record
+  // Définition de la structure de récupération des pointeurs
+  TRETRIEVAL_POINTERS_BUFFER = record
     ExtentCount: DWORD;
-    StartingVcn: LARGE_INTEGER;
-    Extents: array[0..0] of Extent;
+    StartingVcn: TVCN;
+    Extents: array[0..0] of TRETRIEVAL_POINTERS_BUFFER_EXTENT;
   end;
-  PRETRIEVAL_POINTERS_BUFFER = ^RETRIEVAL_POINTERS_BUFFER;
-  RETRIEVAL_POINTERS_BUFFERS=array of RETRIEVAL_POINTERS_BUFFER;
+  PRETRIEVAL_POINTERS_BUFFER = ^TRETRIEVAL_POINTERS_BUFFER;
+
+  // Définition de la structure de l'entrée du VCN de départ
+  TSTARTING_VCN_INPUT_BUFFER = record
+    StartingVcn: TVCN;
+  end;
 
   const   FSCTL_GET_RETRIEVAL_POINTERS = 589939; //(($00000009) shr 16) or ((28) shr 14) or ((3) shr 2) or (0);
 
 function Int64TimeToDateTime(aFileTime: Int64): TDateTime;
 function GetFileSizeByHandle(FileHandle: THandle): Int64;
+function IsFileContiguous(const FileName: string): Boolean;
 
 implementation
 
@@ -180,6 +185,66 @@ begin
   end;
   Result := (Int64(FileSizeHigh) shl 32) or FileSizeLow;
 end;
+
+function IsFileContiguous(const FileName: string): Boolean;
+var
+  hFile: THandle;
+  lpBytesReturned: DWORD;
+  StartVcn: TSTARTING_VCN_INPUT_BUFFER;
+  BufferSize: DWORD;
+  RetrievalPointersBuffer: array of Byte;
+  RetPointerBuffer: PRETRIEVAL_POINTERS_BUFFER;
+  ExtentCount: DWORD;
+  I: Integer;
+  CurrentLCN, NextLCN: TLCN;
+begin
+  Result := False;
+  hFile := CreateFile(PChar(FileName), FILE_READ_ATTRIBUTES, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, 0);
+  if hFile = INVALID_HANDLE_VALUE then
+  begin
+    WriteLn('Failed to open file: ', SysErrorMessage(GetLastError));
+    Exit;
+  end;
+
+  try
+    StartVcn.StartingVcn := 0;
+    BufferSize := SizeOf(TRETRIEVAL_POINTERS_BUFFER) + 1024 * SizeOf(TRETRIEVAL_POINTERS_BUFFER_EXTENT);
+    SetLength(RetrievalPointersBuffer, BufferSize);
+
+    if not DeviceIoControl(hFile, FSCTL_GET_RETRIEVAL_POINTERS, @StartVcn, SizeOf(StartVcn), @RetrievalPointersBuffer[0], BufferSize, @lpBytesReturned, nil) then
+    begin
+      WriteLn('DeviceIoControl failed: ', SysErrorMessage(GetLastError));
+      Exit;
+    end;
+
+    RetPointerBuffer := PRETRIEVAL_POINTERS_BUFFER(@RetrievalPointersBuffer[0]);
+    ExtentCount := RetPointerBuffer^.ExtentCount;
+
+    if ExtentCount = 1 then
+    begin
+      Result := True;
+      Exit;
+    end;
+
+    for I := 0 to ExtentCount - 2 do
+    begin
+      CurrentLCN := RetPointerBuffer^.Extents[I].Lcn;
+      NextLCN := RetPointerBuffer^.Extents[I + 1].Lcn;
+
+      if (NextLCN - CurrentLCN) <> (RetPointerBuffer^.Extents[I + 1].NextVcn - RetPointerBuffer^.Extents[I].NextVcn) then
+      begin
+        Result := False;
+        Exit;
+      end;
+    end;
+
+    Result := True;
+  finally
+    CloseHandle(hFile);
+  end;
+end;
+
+
 
 
 end.
