@@ -8,9 +8,8 @@
       <Unit0>
         <Filename Value="mft.lpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <TopLine Value="499"/>
-        <CursorPos X="146" Y="525"/>
+        <CursorPos X="66" Y="528"/>
         <UsageCount Value="269"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -26,9 +25,10 @@
       <Unit2>
         <Filename Value="utilsdb.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="3"/>
         <TopLine Value="22"/>
-        <CursorPos X="53" Y="44"/>
+        <CursorPos X="49" Y="45"/>
         <UsageCount Value="201"/>
         <Loaded Value="True"/>
       </Unit2>
@@ -37,7 +37,7 @@
         <EditorIndex Value="1"/>
         <TopLine Value="49"/>
         <CursorPos X="14" Y="66"/>
-        <UsageCount Value="57"/>
+        <UsageCount Value="58"/>
         <Loaded Value="True"/>
       </Unit3>
       <Unit4>
