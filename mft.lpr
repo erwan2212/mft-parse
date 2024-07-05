@@ -272,7 +272,15 @@ begin
     New(pFileRecord);
     //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
-    if ((pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3)) or (pFileRecord^.Header.Identifier <>'FILE') then
+    {//flag
+    0x01	Record is in use
+    0x02	Record is a directory (FileName index present)
+    0x04	Record is an exension (Set for records in the $Extend directory)
+    0x08	Special index present (Set for non-directory records containing an index: $Secure, $ObjID, $Quota, $Reparse)
+    }
+    if ((pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3))
+       or (pFileRecord^.Header.Identifier <>'FILE') then //needed??
+    //if pFileRecord^.Flags <>$1 then //inuse
     begin // If it is not a directory
       // The parent directory doesn't exist anymore (it has been overlapped)
       Dispose(pFileRecord);
@@ -347,7 +355,7 @@ CurrentRecordCounter: integer;
   current,prev,vcn:long;
   tid,datasize:dword;
   bresident:boolean;
-  AttributeOffset,contentoffset,p:word;
+  AttributeOffset,contentoffset,p,Flags:word;
   datarun,datalen,dataoffset,j:byte;
   before,after:QWord;
   buf:array of byte;
@@ -549,7 +557,7 @@ CURRENT_DRIVE :=drive; //'c:'
   writeln('***************************************');
 
   if bdatarun =false
-     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastAccessTime|CurrentRecordLocator|resident|location');
+     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags');
 
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
@@ -598,8 +606,10 @@ CURRENT_DRIVE :=drive; //'c:'
 //followed by attributes
 //http://amanda.secured.org/ntfs-mft-record-parsing-parser/
 //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
-    if pFileRecord^.Flags=word(bdeleted=false) then //$1
+    //if pFileRecord^.Flags=word(bdeleted=false) then //$1
+    if 1=1 then
     begin
+      flags:=pFileRecord^.Flags;
       //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
       //https://docs.microsoft.com/fr-fr/windows/desktop/DevNotes/attribute-list-entry
 
@@ -750,14 +760,14 @@ CURRENT_DRIVE :=drive; //'c:'
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes );
+            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end
          else
          begin
          if sql=false
-            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location)
-            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes );
+            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end;
 
 
