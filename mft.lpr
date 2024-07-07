@@ -33,28 +33,32 @@ var
   c:byte;
   //
   hdevice:thandle=thandle(-1);
-  hfile:thandle=thandle(-1);
+  dst:thandle=thandle(-1);
 
-  function do_backup(lcn:int64;nbclusters,ClusterSize:int64):boolean;
+  function do_backup(lcn:int64;nbclusters:dword;ClusterSize:word):boolean;
   var
-  Bytes: ULONG;
-  Buff: PByte;
+  dwread,dwwritten: dword;
+  Buf: array of byte;   //PByte;
   i:longword;
   offset:large_integer;
+  i64:int64;
   begin
+    //writeln(lcn);writeln(nbclusters);writeln(ClusterSize);
         result:=false;
         //GetMem(Buff, ClusterSize); //allocmem would create a zerofilled buffer
-        buff:=allocmem(ClusterSize ); //not in a loop would be preferrable
+        //buf:=allocmem(ClusterSize ); //not in a loop would be preferrable
+        setlength(buf,ClusterSize);
         offset.QuadPart :=lcn*ClusterSize;
-        SetFilePointer(hdevice, Offset.LowPart, @Offset.HighPart, FILE_BEGIN);
+        i64:=lcn*ClusterSize;
+        //writeln(i64);
+        //if SetFilePointer(hdevice, Offset.LowPart, @Offset.HighPart, FILE_BEGIN)=DWORD(-1) then exit;
+        if SetFilePointer(hdevice, int64rec(i64).Lo , @int64rec(i64).hi, FILE_BEGIN)=DWORD(-1) then exit;
         for i:=1 to nbclusters do
         begin
-        if ReadFile(hdevice, Buff^, ClusterSize, Bytes, nil) then
-          begin
-          WriteFile(hFile, Buff^, ClusterSize, Bytes, nil);
-          end;
+        if Readfile(hDevice, buf[0], ClusterSize, dwread, nil)
+           then writefile(dst,buf[0],dwread,dwwritten,nil);
         end; //for
-        FreeMem(Buff);
+        //FreeMem(Buff);
         result:=true;
   end;
 
@@ -326,7 +330,7 @@ end;
 
 procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false;backupmft:boolean=false);
 var
-{hDevice,}dst : THandle;
+//{hDevice,}dst : THandle;
 
 pBootSequence: ^TBOOT_SEQUENCE;
 pFileRecord: ^TFILE_RECORD;
@@ -573,7 +577,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
 
-  for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do
+  for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do //0 if you want $mft etc
   begin
 
     if (CurrentRecordCounter mod 256) = 0 then
@@ -738,12 +742,17 @@ CURRENT_DRIVE :=drive; //'c:'
            //backup has been requested
            if 1=0 then
               begin
-              if hfile=thandle(-1) then hFile := CreateFile('e:\test.dmp', GENERIC_WRITE, 0, nil, CREATE_NEW, 0, 0);
-              do_backup(current,strtoint('$'+runlen),BytesPerCluster);
+
+              if dst=thandle(-1) then
+                begin
+                {$i-}deletefile('_'+ansistring(fileName));{$i+};
+                dst := CreateFile(pchar('_'+ansistring(fileName)), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE, nil, CREATE_ALWAYS, FILE_FLAG_SEQUENTIAL_SCAN, 0);
+                end;
+              if do_backup(current,strtoint('$'+runlen),BytesPerCluster)=false then log('do_backup failed');
               end;
            //
            end; //while datarun<>$ff then
-           if hfile<>thandle(-1) then closehandle(hfile);
+           if dst<>thandle(-1) then begin closehandle(dst);dst:=thandle(-1);end;
            end;  //if pos(filter,filename)>0 then
            end;  //if pDataAttributeHeader^.NonResident=1 then
         // Gets the File Size : there is a little trick to prevent us from loading another data structure
