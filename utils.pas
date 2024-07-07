@@ -1,6 +1,7 @@
 unit utils;
 
-{$mode objfpc}{$H+}
+//{$mode objfpc}{$H+}
+{$ifdef fpc}{$mode delphi}{$endif fpc}
 
 interface
 
@@ -48,6 +49,14 @@ type
     Flags : Word;          //12-13
     AttributeNumber : Word; //14-15
   end;
+  TAttributeHeader=TRECORD_ATTRIBUTE;
+
+    TDataAttribute = record
+    AttributeHeader: TAttributeHeader;
+    // Champs spécifiques pour l'attribut $DATA
+    DataSize: Int64;
+  end;
+    pDataAttribute=^TDataAttribute;
 
 type
   TNONRESIDENT_ATTRIBUTE = packed record
@@ -158,6 +167,11 @@ function Int64TimeToDateTime(aFileTime: Int64): TDateTime;
 function GetFileSizeByHandle(FileHandle: THandle): Int64;
 function IsFileContiguous(const FileName: string): Boolean;
 
+function ByteSwap16(w: word): word;
+function ByteSwap32(dw: cardinal): cardinal;
+function ByteSwap64(Value: Int64): Int64;
+
+
 implementation
 
 //=====================================================================================================//
@@ -244,8 +258,41 @@ begin
   end;
 end;
 
+{$ifdef fpc}
+{$asmmode intel}
+{$endif}
+//support cpux86 and cpux64
+function ByteSwap64(Value: Int64): Int64;
+asm
+{$IF Defined(CPUX86)}
+  mov    edx, [ebp+$08]
+  mov    eax, [ebp+$0c]
+  bswap  edx
+  bswap  eax
+{$ELSEIF Defined(CPUX64)}
+  mov    rax, rcx
+  bswap  rax
+//{$ELSE}
+//{$Message Fatal 'ByteSwap64 has not been implemented for this architecture.'}
+//{$ENDIF}
+{$IFEND}
+end;
 
+function ByteSwap32(dw: cardinal): cardinal;
+asm
+  {$IFDEF CPUX64}
+  mov rax, rcx
+  {$ENDIF}
+  bswap eax
+end;
 
+function ByteSwap16(w: word): word;
+asm
+   {$IFDEF CPUX64}
+   mov rax, rcx
+   {$ENDIF}
+   xchg   al, ah
+end;
 
 end.
 

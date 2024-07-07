@@ -165,6 +165,7 @@ function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord
 
         // We test here the FileNameSpace Value directly (without any record structure)
         if (TmpRecordData[$59]=Char($0)) {POSIX} or (TmpRecordData[$59]=Char($1)) {Win32}
+           //or (TmpRecordData[$59]=Char($2))
            or (TmpRecordData[$59]=Char($3)) {Win32&DOS} then
               begin
               SetLength(result,pRecordAttribute^.Length);
@@ -177,20 +178,20 @@ function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord
               TmpRecordData := Copy(RecordData,NextAttributeOffset,TotalBytes-(NextAttributeOffset-1));
               // Recursive Call : finds next matching attributes
               result := FindAttributeByType(TmpRecordData,AttributeType,true);
-              end;
+              end; //if (TmpRecordData[$59]=Char($0)) {POSIX} ...
 
               end
               else
               begin
               SetLength(result,pRecordAttribute^.Length);
               result := Copy(TmpRecordData,0,pRecordAttribute^.Length);
-              end;
+              end; //if (FindSpecificFileNameSpaceValue) and (AttributeType=atAttributeFileName)  then
 
               end
               else
               begin
               result := nil;
-              end;
+              end; //if pRecordAttribute^.AttributeType = AttributeType then
     Dispose(pRecordAttribute);
   end;
 
@@ -323,7 +324,7 @@ begin
   writeln(msg);
 end;
 
-procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false;backup:boolean=false);
+procedure mft_parse(DRIVE:string;filter:string='';bdatarun:boolean=false;bdeleted:boolean=false;backupmft:boolean=false);
 var
 {hDevice,}dst : THandle;
 
@@ -363,6 +364,7 @@ CurrentRecordCounter: integer;
   InBuf: TSTARTING_VCN_INPUT_BUFFER;
   OutBuf: PRETRIEVAL_POINTERS_BUFFER;
   Bytes: ULONG;
+  bIsFileContiguous:boolean=false;
 begin
 
 CURRENT_DRIVE :=drive; //'c:'
@@ -472,7 +474,11 @@ CURRENT_DRIVE :=drive; //'c:'
   //log('MFT LowVCN , HighVCN : '+inttostr(pMFTNonResidentAttribute^.LowVCN)+' , '+inttostr(pMFTNonResidentAttribute^.HighVCN )) ;
   //if MASTER_FILE_TABLE_SIZE=pMFTNonResidentAttribute^.HighVCN +1
   if (IsFileContiguous(CURRENT_DRIVE+'\$mft'))=true
-     then log('MFT is contiguous')
+     then
+       begin
+       log('MFT is contiguous');
+       bIsFileContiguous:=true;
+       end
      else
      begin
      log('MFT is fragmented');
@@ -499,8 +505,9 @@ CURRENT_DRIVE :=drive; //'c:'
 
   //test - backup mft - mft could be fragmented and we should go thru the run list of $mft...
   //rawcopy could be use to dump a file from the entryid
-  if backup=true then
+  if backupmft=true then
   begin
+  if bIsFileContiguous=false then begin log('Cannot dump fragmented mft');closehandle(hDevice );exit; end;
   dst := CreateFile( PChar('mft.dmp' ), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, CREATE_ALWAYS , FILE_FLAG_SEQUENTIAL_SCAN, 0);
   SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,
@@ -606,8 +613,9 @@ CURRENT_DRIVE :=drive; //'c:'
 //followed by attributes
 //http://amanda.secured.org/ntfs-mft-record-parsing-parser/
 //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
-    //if pFileRecord^.Flags=word(bdeleted=false) then //$1
-    if 1=1 then
+    if pFileRecord^.Flags=word(bdeleted=false) then //$1
+    //if pFileRecord^.Flags<>0 then //$1
+    //if 1=1 then
     begin
       flags:=pFileRecord^.Flags;
       //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
@@ -741,8 +749,12 @@ CURRENT_DRIVE :=drive; //'c:'
         // Gets the File Size : there is a little trick to prevent us from loading another data structure
         // which would depend on the value of the Non-Resident Flag...
         // A concrete example greatly helps comprehension of the following line !
+           //_SwapEndian(Hex($MftFileSize,16)) ; Allocated size
+	   //_SwapEndian(Hex($MftFileSize,16)) ; Real size
+	   //_SwapEndian(Hex($MftFileSize,16)) ; Initialized size
            FileSizeArray := Copy(DataAttributeHeader, $10+(pDataAttributeHeader^.NonResident)*$20,
                                  (pDataAttributeHeader^.NonResident+$1)*$4 );
+           //filesize:= ByteSwap64 (pDataAttribute(@DataAttributeHeader[0])^.DataSize) ;
            FileSize := 0;
            for i:=Length(FileSizeArray)-1 downto 0 do FileSize := (FileSize shl 8)+Ord(FileSizeArray[i]);
            bresident:= pDataAttributeHeader^.NonResident=0 ;
@@ -810,6 +822,7 @@ begin
      writeln('DR stands for datarun i.e clusters used by a file');
      writeln('DT stands for deleted i.e file clusters can be reused by the system');
      writeln('SQL will dump records to mft.db3 sqlite DB');
+     writeln('BACKUPMFT will dump the mft to mft.dmp');
      exit;
      end;
   //if paramcount>=2 then filter:=paramstr(2);
@@ -826,7 +839,7 @@ begin
   if pos('/SQL',uppercase(cmdline))>0 then sql:=true;
 
  if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
- mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0,pos('/BACKUP',uppercase(cmdline))>0);
+ mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0,pos('/BACKUPMFT',uppercase(cmdline))>0);
  if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
 
 end.

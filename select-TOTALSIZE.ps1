@@ -6,8 +6,7 @@ Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.
 $databasePath = "mft.db3"
 
 # SQL query to execute
-$query = "SELECT SUM(FileSize) / (1024*1024) AS TOTALSIZE FROM files;
-"
+$query = "SELECT SUM(FileSize) / (1024*1024) AS TOTALSIZE FROM files;"
 
 # Function to execute the query and return the results
 function Execute-SQLiteQuery {
