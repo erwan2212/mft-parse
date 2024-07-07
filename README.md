@@ -17,7 +17,6 @@ Some notes/thoughts:<br>
 If the MFT is fragmented, you will need to dump it with extents-win64.<br>
 name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
 <br>
-<br>
 For now, only MBR drives are supported.
 <br>
 <br>
