@@ -15,9 +15,11 @@ you can download from here system.data.sqlite for powershell (recommanded : .net
 Some notes/thoughts:<br>
 <br>
 If the MFT is fragmented, you will need to dump it with extents-win64.<br>
-name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
+Name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
+Future versions will handle fragmented MFT's transparently.<br>
 <br>
-For now, only MBR drives are supported.
+For now, only MBR drives are supported.<br>
+Future versions will handle GPT drives as well.<BR>
 <br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
