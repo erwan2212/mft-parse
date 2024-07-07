@@ -1,6 +1,8 @@
-mft-win32.exe /sql f: * -> will dump the whole mft to mft.db3 (the db3 file will be overwriten)<br>
 mft-win32.exe f: * -> will dump the whole mft to the console<br>
 mft-win32.exe f: test -> will dump the whole mft to the console only for files containing the substring test<br>
+mft-win32.exe /sql f: * -> will dump the whole mft to mft.db3 (the db3 file will be overwriten)<br>
+mft-win32.exe /dt f: * -> will dump the whole mft to the console only for files deleted<br>
+mft-win32.exe /dr f: * -> will dump the whole mft to the console with their respective datarun i.e extents on the disk<br>
 <br>
 select.ps1 is a powershell example to query the mft.db3.<br>
 select-BIG25.ps1 will output top 25 biggest files.<br>
@@ -11,6 +13,13 @@ select-COMPRESSED.ps1 will display files with flag=compressed.<br>
 you can download from here system.data.sqlite for powershell (recommanded : .net 4.6) : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
 <br>
 Some notes/thoughts:<br>
+<br>
+If the MFT is fragmented, you will need to dump it with extents-win64.<br>
+name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
+<br>
+<br>
+For now, only MBR drives are supported.
+<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
