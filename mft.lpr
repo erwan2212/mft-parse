@@ -4,7 +4,8 @@ program mft;
 
 uses
 
-  windows,sysutils, utils,utilsdb;
+  windows,sysutils, utils,utilsdb,
+  rcmdline in '..\rcmdline-master\rcmdline.pas';
 
 
 
@@ -14,7 +15,7 @@ const
   atAttributeData = $80;
 
 var
-  BytesPerFileRecord: Word;
+  BytesPerFileRecord: Word=1024;
   BytesPerCluster: Word;
   BytesPerSector: Word;
   SectorsPerCluster: Word;
@@ -29,11 +30,16 @@ var
   //
   filter:string='';
   drive:string='';
+  filename:string='';
   sql:boolean=false;
+  dr_backup:boolean=false;
   c:byte;
+  first_record:longint=16;
   //
   hdevice:thandle=thandle(-1);
   dst:thandle=thandle(-1);
+  //
+  cmd:TCommandLineReader;
 
   function do_backup(lcn:int64;nbclusters:dword;ClusterSize:word):boolean;
   var
@@ -370,8 +376,23 @@ CurrentRecordCounter: integer;
   Bytes: ULONG;
   bIsFileContiguous:boolean=false;
 begin
+  //debug
+  {
+  writeln('***************************************');
+  log('db3='+BoolToStr(sql));
+  log('selected drive='+drive);
+  log('filter='+filter);
+  log('datarun='+BoolToStr (bdatarun));
+  log('deleted='+BoolToStr (bdeleted));
+  log('backupmft='+BoolToStr (backupmft));
+  log('first_record='+inttostr(first_record));
+  }
+  //
+  CURRENT_DRIVE :=drive; //'c:' //global var since used in getfilepath
 
-CURRENT_DRIVE :=drive; //'c:'
+  if FileExists (CURRENT_DRIVE+'\mft.dmp')=false then //we are NOT in offline mode
+  begin
+
   hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, OPEN_EXISTING, 0{FILE_FLAG_SEQUENTIAL_SCAN}, 0);
   if (hDevice = INVALID_HANDLE_VALUE) then
@@ -420,8 +441,6 @@ CURRENT_DRIVE :=drive; //'c:'
 
   log('MFT Location : $'+IntToHex(MASTER_FILE_TABLE_LOCATION,2));
 
-
-
   SetLength(MFTData,BytesPerFileRecord);
   SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,@Int64Rec(MASTER_FILE_TABLE_LOCATION).Hi, FILE_BEGIN);
   //closehandle(hdevice);
@@ -430,7 +449,7 @@ CURRENT_DRIVE :=drive; //'c:'
   Readfile(hDevice, PChar(MFTData)^, BytesPerFileRecord, dwread, nil);
   Log('MFT Data Read : '+IntToStr(dwread)+' Bytes');
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
   // Fixes Up the MFT MainRecord Update Sequence
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
   try
@@ -485,25 +504,8 @@ CURRENT_DRIVE :=drive; //'c:'
        end
      else
      begin
-     log('MFT is fragmented');
-     if not FileExists (CURRENT_DRIVE+'\mft.dmp') then writeln('dump mft.dmp to the selected root drive');
-       {outbuf:=AllocMem(sizeof(RETRIEVAL_POINTERS_BUFFER));
-       bytes:=0;
-       InBuf.StartingVcn.QuadPart := 0;
-       hfile := CreateFile( PChar(CURRENT_DRIVE+'\$mft' ), {0}FILE_READ_ATTRIBUTES, {0}FILE_SHARE_READ ,
-                              nil, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, 0);
-       if (hfile)=thandle(-1) then exit;
-       repeat
-       DeviceIoControl(hfile, FSCTL_GET_RETRIEVAL_POINTERS, @InBuf, SizeOf(InBuf), OutBuf, sizeof(RETRIEVAL_POINTERS_BUFFER), Bytes, nil);
-       //writeln(getlasterror);
-       if (getlasterror<>ERROR_MORE_DATA) then break ;
-       InBuf.StartingVCN.QuadPart := OutBuf^.Extents[0].NextVCN.QuadPart;
-       //size
-       writeln('VCN:'+inttostr(InBuf.StartingVCN.QuadPart)+' - LCN:'+inttostr(OutBuf^.Extents[0].LCN.QuadPart ));
-       until getlasterror <> ERROR_MORE_DATA;
-       FreeMem(OutBuf);
-       closehandle(hfile);
-       }
+     log('Warning : MFT is fragmented, result may be inconsistent');
+     if not FileExists (CURRENT_DRIVE+'\mft.dmp') then writeln('Recommended : dump mft.dmp to the selected root drive');
      end;
 
 
@@ -511,7 +513,12 @@ CURRENT_DRIVE :=drive; //'c:'
   //rawcopy could be use to dump a file from the entryid
   if backupmft=true then
   begin
-  if bIsFileContiguous=false then begin log('Cannot dump fragmented mft');closehandle(hDevice );exit; end;
+  if bIsFileContiguous=false then
+     begin
+     log('Cannot dump fragmented mft');
+     closehandle(hDevice );
+     exit;
+     end;
   dst := CreateFile( PChar('mft.dmp' ), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, CREATE_ALWAYS , FILE_FLAG_SEQUENTIAL_SCAN, 0);
   SetFilePointer(hDevice, Int64Rec(MASTER_FILE_TABLE_LOCATION).Lo,
@@ -529,6 +536,7 @@ CURRENT_DRIVE :=drive; //'c:'
   exit;
   end;
 
+  end; //if FileExists (CURRENT_DRIVE+'\mft.dmp')=false then //we are NOT in offline mode
   //
 
 
@@ -536,7 +544,7 @@ CURRENT_DRIVE :=drive; //'c:'
   //**********************************************************************************
 
 
-  if FileExists (CURRENT_DRIVE+'\mft.dmp') then
+  if FileExists (CURRENT_DRIVE+'\mft.dmp') then  //we ARE in offline mode
      begin
      writeln('Opening mft.dmp');
      closehandle(hdevice);
@@ -547,7 +555,8 @@ CURRENT_DRIVE :=drive; //'c:'
      writeln('->Size:'+inttostr(MASTER_FILE_TABLE_SIZE)+ ' bytes');
      MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE  ) div BytesPerFileRecord;
      log('->Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
-     end;
+     //BytesPerFileRecord:=1024; //we would set this value here
+     end; //if FileExists (CURRENT_DRIVE+'\mft.dmp') then  //we ARE in offline mode
 
   writeln('***************************************');
 
@@ -577,7 +586,7 @@ CURRENT_DRIVE :=drive; //'c:'
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
 
-  for CurrentRecordCounter := 16 to MASTER_FILE_TABLE_RECORD_COUNT-1 do //0 if you want $mft etc
+  for CurrentRecordCounter := first_record to MASTER_FILE_TABLE_RECORD_COUNT-1 do //0 if you want $mft etc
   begin
 
     if (CurrentRecordCounter mod 256) = 0 then
@@ -740,7 +749,7 @@ CURRENT_DRIVE :=drive; //'c:'
            prev:=current;
            inc(count);
            //backup has been requested
-           if 1=0 then
+           if dr_backup=true then
               begin
 
               if dst=thandle(-1) then
@@ -781,7 +790,7 @@ CURRENT_DRIVE :=drive; //'c:'
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
                               else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end
          else
@@ -822,6 +831,43 @@ end;
 
 
 begin
+
+
+ if paramcount=0 then
+ begin
+   writeln('https://github.com/erwan2212');
+   writeln('Usage: mft-win32 --help');
+   exit;
+ end;
+
+
+  cmd := TCommandLineReader.create;
+  cmd.declareString('drive', 'selected drive/partition to dump mft for','c:');
+  cmd.declareString('filter', 'optional, pattern to filter files','');
+  cmd.declareString('filename', 'optional, will use an offline mft dump');
+  cmd.declareInt ('first_record', 'optional, first mft record to start enumerating',16);
+  cmd.declareflag('db3', 'optional, will dump records to mft.db3 sqlite DB');
+  cmd.declareflag('dr', 'optional, will display dataruns i.e clusters used by a file - needs filter flag');
+  cmd.declareflag('dr_backup', 'optional, will dump dataruns i.e clusters used by a file - needs dr flag');
+  cmd.declareflag('dt', 'optional, will display deleted files');
+  cmd.declareflag('mft_backup', 'optional, will backup the mft to mft.dmp - not supported in offline mode or if mft is fragmented');
+
+  cmd.parse(cmdline);
+
+  drive:=cmd.readString ('drive');
+  filter:=cmd.readString ('filter');if filter='*' then filter:='';
+  filename:=cmd.readString ('filename');
+  sql:=cmd.readFlag ('db3');
+  first_record:=cmd.readint ('first_record');
+  dr_backup:=cmd.readFlag ('dr_backup');if filename<>'' then dr_backup:=false;
+
+  if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
+  mft_parse (drive,filter,cmd.readFlag ('dr'),cmd.readFlag ('dt'),cmd.readFlag ('mft_backup'));
+  if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
+
+
+
+  exit;
 
 
   if paramcount=0 then
