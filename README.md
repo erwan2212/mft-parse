@@ -21,7 +21,7 @@ you can download from here system.data.sqlite for powershell (recommanded : .net
 <br>
 Some notes/thoughts:<br>
 <br>
-If the MFT is <b>fragmented</b>, you will need to backup it with extents-win64.<br>
+If the MFT is <b>fragmented</b>, you will need to backup it with extents-win64 like this:extents-win64.exe c:\$mft mft.dmp<br>
 Name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
 You can also backup a fragmented mft the followong way : mft-win32.exe --drive=c: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
 <br>
