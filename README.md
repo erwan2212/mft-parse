@@ -1,8 +1,15 @@
-mft-win32.exe f: * -> will dump the whole mft to the console<br>
-mft-win32.exe f: test -> will dump the whole mft to the console only for files containing the substring test<br>
-mft-win32.exe /sql f: * -> will dump the whole mft to mft.db3 (the db3 file will be overwriten)<br>
-mft-win32.exe /dt f: * -> will dump the whole mft to the console only for files deleted<br>
-mft-win32.exe /dr f: * -> will dump the whole mft to the console with their respective datarun i.e extents on the disk<br>
+The following command line options are valid:<br>
+<br>
+--drive=<string>        selected drive/partition to dump mft for (default: c:)<br>
+--filter=<string>       optional, pattern to filter files<br>
+--filename=<string>     optional, will use an offline mft dump<br>
+--first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
+--db3                   optional, will dump records to mft.db3 sqlite DB<br>
+--dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
+--dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
+--dt                    optional, will display deleted files<br>
+--mft_backup            optional, will backup the mft to mft.dmp - not supported in offline mode or if mft is<br>
+                        fragmented<br>
 <br>
 select.ps1 is a powershell example to query the mft.db3.<br>
 select-BIG25.ps1 will output top 25 biggest files.<br>
@@ -14,12 +21,11 @@ you can download from here system.data.sqlite for powershell (recommanded : .net
 <br>
 Some notes/thoughts:<br>
 <br>
-If the MFT is fragmented, you will need to dump it with extents-win64.<br>
-name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
+If the MFT is <b>fragmented</b>, you will need to dump it with extents-win64.<br>
+Name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
+Future versions will handle fragmented MFT's transparently.<br>
 <br>
-<br>
-For now, only MBR drives are supported.
-<br>
+Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
