@@ -18,8 +18,7 @@ If the MFT is <b>fragmented</b>, you will need to dump it with extents-win64.<br
 Name the file mft.dmp and place it at the root of the drive you want to analyse.<br>
 Future versions will handle fragmented MFT's transparently.<br>
 <br>
-For now, only <b>MBR</b> drives are supported.<br>
-Future versions will handle <b>GPT</b> drives as well.<BR>
+Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
