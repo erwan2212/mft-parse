@@ -16,9 +16,9 @@ const
 
 var
   BytesPerFileRecord: Word=1024;
-  BytesPerCluster: Word;
-  BytesPerSector: Word;
-  SectorsPerCluster: Word;
+  BytesPerCluster: Word=4096;
+  BytesPerSector: Word=512;
+  SectorsPerCluster: Word=8;
   //
   MASTER_FILE_TABLE_LOCATION : Int64;             //    \
   MASTER_FILE_TABLE_END : Int64;                  //     |__    MFT Location & Contents
@@ -30,11 +30,12 @@ var
   //
   filter:string='';
   drive:string='';
-  filename:string='';
+  mft_filename:string='';
   sql:boolean=false;
   dr_backup:boolean=false;
   c:byte;
   first_record:longint=16;
+  last_record:longint=0;
   //
   hdevice:thandle=thandle(-1);
   dst:thandle=thandle(-1);
@@ -386,12 +387,17 @@ begin
   log('deleted='+BoolToStr (bdeleted));
   log('backupmft='+BoolToStr (backupmft));
   log('first_record='+inttostr(first_record));
+  log('last_record='+inttostr(last_record));
+  log('BytesPerFileRecord='+inttostr(BytesPerFileRecord));
   }
   //
   CURRENT_DRIVE :=drive; //'c:' //global var since used in getfilepath
 
-  if FileExists (CURRENT_DRIVE+'\mft.dmp')=false then //we are NOT in offline mode
+  //***********************************************************
+  //boot sequence : do we need it in offline mode? i'd say not...
+  if mft_filename='' then //we are NOT in offline mode
   begin
+
 
   hDevice := CreateFile( PChar('\\.\'+CURRENT_DRIVE ), {0}GENERIC_READ, {0}FILE_SHARE_READ or FILE_SHARE_WRITE,
                          nil, OPEN_EXISTING, 0{FILE_FLAG_SEQUENTIAL_SCAN}, 0);
@@ -400,7 +406,7 @@ begin
   writeln('INVALID_HANDLE_VALUE,'+inttostr(GetLastError) );
   exit;
   end;
- //******************************************************
+
   New(PBootSequence);
   ZeroMemory(PBootSequence, SizeOf(TBOOT_SEQUENCE));
   SetFilePointer(hDevice, 0, nil, FILE_BEGIN);
@@ -438,6 +444,11 @@ begin
   MASTER_FILE_TABLE_LOCATION := PBootSequence^.MftStartLcn * PBootSequence^.wBytesPerSector
                                 * PBootSequence^.bSectorsPerCluster;
   Dispose(PBootSequence);
+
+  //********************************************************************************************
+
+  //if mft_filename='' then //we are NOT in offline mode
+  //begin
 
   log('MFT Location : $'+IntToHex(MASTER_FILE_TABLE_LOCATION,2));
 
@@ -505,7 +516,7 @@ begin
      else
      begin
      log('Warning : MFT is fragmented, result may be inconsistent');
-     if not FileExists (CURRENT_DRIVE+'\mft.dmp') then writeln('Recommended : dump mft.dmp to the selected root drive');
+     log('Recommended : backup mft and work offline');
      end;
 
 
@@ -536,7 +547,7 @@ begin
   exit;
   end;
 
-  end; //if FileExists (CURRENT_DRIVE+'\mft.dmp')=false then //we are NOT in offline mode
+  end; //if mft_filename='' then //we are NOT in offline mode
   //
 
 
@@ -544,11 +555,11 @@ begin
   //**********************************************************************************
 
 
-  if FileExists (CURRENT_DRIVE+'\mft.dmp') then  //we ARE in offline mode
+  if (mft_filename<>'') and (FileExists (mft_filename)=true) then  //we ARE in offline mode
      begin
-     writeln('Opening mft.dmp');
+     writeln('Opening '+mft_filename);
      closehandle(hdevice);
-     hDevice := CreateFile( PChar(CURRENT_DRIVE+'\mft.dmp' ), {0}GENERIC_READ, {0}FILE_SHARE_READ , nil, OPEN_EXISTING, 0, 0);
+     hDevice := CreateFile( pchar(mft_filename), {0}GENERIC_READ, {0}FILE_SHARE_READ , nil, OPEN_EXISTING, 0, 0);
      if hdevice=thandle(-1) then begin writeln('invalid handle,'+inttostr(getlasterror));exit; end;
      MASTER_FILE_TABLE_LOCATION:=0;
      MASTER_FILE_TABLE_SIZE:=GetFileSizeByHandle(hdevice);
@@ -556,7 +567,7 @@ begin
      MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE  ) div BytesPerFileRecord;
      log('->Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
      //BytesPerFileRecord:=1024; //we would set this value here
-     end; //if FileExists (CURRENT_DRIVE+'\mft.dmp') then  //we ARE in offline mode
+     end; if (mft_filename<>'') and (FileExists (mft_filename)=true) then  //we ARE in offline mode
 
   writeln('***************************************');
 
@@ -586,14 +597,9 @@ begin
   // Main Loop
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
 
-  for CurrentRecordCounter := first_record to MASTER_FILE_TABLE_RECORD_COUNT-1 do //0 if you want $mft etc
+  if last_record=0 then last_record:=MASTER_FILE_TABLE_RECORD_COUNT-1;
+  for CurrentRecordCounter := first_record to last_record do //0 if you want $mft etc
   begin
-
-    if (CurrentRecordCounter mod 256) = 0 then
-    begin // Refreshes File Counter every 256 records
-       //log('Analyzing File Record '+IntToStr(CurrentRecordCounter+1)+' out of ' +IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
-       //writeln(inttostr(GetTickCount64));
-    end;
 
     CurrentRecordLocator := MASTER_FILE_TABLE_LOCATION + CurrentRecordCounter*BytesPerFileRecord;
 
@@ -842,10 +848,11 @@ begin
 
 
   cmd := TCommandLineReader.create;
-  cmd.declareString('drive', 'selected drive/partition to dump mft for','c:');
+  cmd.declareString('drive', 'selected drive/partition to dump mft for - if offline, only used to build paths','c:');
   cmd.declareString('filter', 'optional, pattern to filter files','');
-  cmd.declareString('filename', 'optional, will use an offline mft dump');
+  cmd.declareString('mft_filename', 'optional, will use an offline mft dump');
   cmd.declareInt ('first_record', 'optional, first mft record to start enumerating',16);
+  cmd.declareInt ('last_record', 'optional, last mft record to stop enumerating',0);
   cmd.declareflag('db3', 'optional, will dump records to mft.db3 sqlite DB');
   cmd.declareflag('dr', 'optional, will display dataruns i.e clusters used by a file - needs filter flag');
   cmd.declareflag('dr_backup', 'optional, will dump dataruns i.e clusters used by a file - needs dr flag');
@@ -856,10 +863,11 @@ begin
 
   drive:=cmd.readString ('drive');
   filter:=cmd.readString ('filter');if filter='*' then filter:='';
-  filename:=cmd.readString ('filename');
+  mft_filename:=cmd.readString ('mft_filename');
   sql:=cmd.readFlag ('db3');
   first_record:=cmd.readint ('first_record');
-  dr_backup:=cmd.readFlag ('dr_backup');if filename<>'' then dr_backup:=false;
+  last_record:=cmd.readint ('last_record');
+  dr_backup:=cmd.readFlag ('dr_backup');if mft_filename<>'' then dr_backup:=false;
 
   if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
   mft_parse (drive,filter,cmd.readFlag ('dr'),cmd.readFlag ('dt'),cmd.readFlag ('mft_backup'));
