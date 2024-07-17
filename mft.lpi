@@ -24,7 +24,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="f: *"/>
+        <CommandLineParams Value="--mft_filename=f:\mft.dmp.0 --drive=g:"/>
       </local>
     </RunParams>
     <Units Count="3">

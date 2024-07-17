@@ -15,6 +15,7 @@ const
   atAttributeData = $80;
 
 var
+  //default value below needed for offline mode
   BytesPerFileRecord: Word=1024;
   BytesPerCluster: Word=4096;
   BytesPerSector: Word=512;
@@ -33,7 +34,6 @@ var
   mft_filename:string='';
   sql:boolean=false;
   dr_backup:boolean=false;
-  c:byte;
   first_record:longint=16;
   last_record:longint=0;
   //
@@ -143,9 +143,11 @@ function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord
     ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD));
     CopyMemory(pFileRecord, @RecordData[0], SizeOf(TFILE_RECORD));
     if  pFileRecord^.Header.Identifier[1] + pFileRecord^.Header.Identifier[2]
-       + pFileRecord^.Header.Identifier[3] + pFileRecord^.Header.Identifier[4]<>'FILE' then begin
+       + pFileRecord^.Header.Identifier[3] + pFileRecord^.Header.Identifier[4]<>'FILE' then
+    begin
       NextAttributeOffset := 0; // In this case, the parameter is a buffer taken from a recursive call
-    end else begin
+    end else
+    begin
       NextAttributeOffset := pFileRecord^.AttributesOffset; // Means that it's the first run of recursion
     end;
 
@@ -176,7 +178,7 @@ function FindAttributeByType(RecordData: TDynamicCharArray; AttributeType: DWord
 
         // We test here the FileNameSpace Value directly (without any record structure)
         if (TmpRecordData[$59]=Char($0)) {POSIX} or (TmpRecordData[$59]=Char($1)) {Win32}
-           //or (TmpRecordData[$59]=Char($2))
+           or (TmpRecordData[$59]=Char($2))
            or (TmpRecordData[$59]=Char($3)) {Win32&DOS} then
               begin
               SetLength(result,pRecordAttribute^.Length);
@@ -239,7 +241,9 @@ begin
     result := ParentName;
     exit;
 
-  end else begin
+  end
+  else
+  begin
     // Else, we have to recursively determine the path
     // WARNING: The path may NOT be correct if a directory record has been replaced by another!
     // Any error will lead to answer '*\' which actually means "no way to determine further the parent"
@@ -291,7 +295,8 @@ begin
     0x08	Special index present (Set for non-directory records containing an index: $Secure, $ObjID, $Quota, $Reparse)
     }
     if ((pFileRecord^.Flags<>$2) and (pFileRecord^.Flags<>$3))
-       or (pFileRecord^.Header.Identifier <>'FILE') then //needed??
+       //or (pFileRecord^.Header.Identifier <>'FILE')  //needed??
+       then
     //if pFileRecord^.Flags <>$1 then //inuse
     begin // If it is not a directory
       // The parent directory doesn't exist anymore (it has been overlapped)
@@ -358,7 +363,7 @@ CurrentRecordCounter: integer;
   FileName: WideString;
   FilePath: string;
   FileCreationTime, FileChangeTime,LastWriteTime, LastAccessTime   : TDateTime;
-  FileSize: Int64;
+  FileSize,ParentReferenceNo: Int64;
   FileAttributes:dword;
   FileSizeArray : TDynamicCharArray;
 
@@ -372,9 +377,9 @@ CurrentRecordCounter: integer;
   before,after:QWord;
   buf:array of byte;
   //
-  InBuf: TSTARTING_VCN_INPUT_BUFFER;
-  OutBuf: PRETRIEVAL_POINTERS_BUFFER;
-  Bytes: ULONG;
+  //InBuf: TSTARTING_VCN_INPUT_BUFFER;
+  //OutBuf: PRETRIEVAL_POINTERS_BUFFER;
+  //Bytes: ULONG;
   bIsFileContiguous:boolean=false;
 begin
   //debug
@@ -566,7 +571,7 @@ begin
      writeln('->Size:'+inttostr(MASTER_FILE_TABLE_SIZE)+ ' bytes');
      MASTER_FILE_TABLE_RECORD_COUNT := (MASTER_FILE_TABLE_SIZE  ) div BytesPerFileRecord;
      log('->Number of Records : '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
-     //BytesPerFileRecord:=1024; //we would set this value here
+     //BytesPerFileRecord:=1024; //we could set this value here
      end; if (mft_filename<>'') and (FileExists (mft_filename)=true) then  //we ARE in offline mode
 
   writeln('***************************************');
@@ -588,7 +593,7 @@ begin
   writeln('***************************************');
 
   if bdatarun =false
-     then if sql=false then log('mft_record_no|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags');
+     then if sql=false then log('mft_record_no|ParentReferenceNo|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags');
 
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
@@ -632,9 +637,10 @@ begin
 //followed by attributes
 //http://amanda.secured.org/ntfs-mft-record-parsing-parser/
 //https://digital-forensics.sans.org/blog/2012/10/15/resident-data-residue-in-ntfs-mft-entries/
-    if pFileRecord^.Flags=word(bdeleted=false) then //$1
+    //if pFileRecord^.Flags=word(bdeleted=false) then //$1
     //if pFileRecord^.Flags<>0 then //$1
     //if 1=1 then
+    if (bdeleted=false) or ((bdeleted=true) and (pFileRecord^.Flags=0)) then
     begin
       flags:=pFileRecord^.Flags;
       //writeln(pFileRecord^.BytesInUse ); //the whole record size, eventually contains resident data
@@ -648,6 +654,7 @@ begin
         New(pFileNameAttribute);
         //ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
         CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
+        ParentReferenceNo:=Int64Rec(pFileNameAttribute^.DirectoryFileReferenceNumber).lo;
         // Gets the File Name, which begins at offset $5A of this attribute
            FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
            // Gets the File Path
@@ -796,13 +803,13 @@ begin
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
                               else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end
          else
          begin
          if sql=false
-            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
             else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end;
 
@@ -872,37 +879,5 @@ begin
   if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
   mft_parse (drive,filter,cmd.readFlag ('dr'),cmd.readFlag ('dt'),cmd.readFlag ('mft_backup'));
   if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
-
-
-
-  exit;
-
-
-  if paramcount=0 then
-     begin
-     writeln('mft-parse 0.3 by erwan2212@gmail.com');
-     writeln('mft-parse [/DR] [/DT] [/SQL] x: [a_filename_substring|*]');
-     writeln('DR stands for datarun i.e clusters used by a file');
-     writeln('DT stands for deleted i.e file clusters can be reused by the system');
-     writeln('SQL will dump records to mft.db3 sqlite DB');
-     writeln('BACKUPMFT will dump the mft to mft.dmp');
-     exit;
-     end;
-  //if paramcount>=2 then filter:=paramstr(2);
-  //writeln(paramcount);
-  for c:=1 to paramcount  do
-      begin
-      //writeln(paramstr(c));
-      if (pos('/',paramstr(c))=0) and (drive<>'') then filter:=paramstr(c);
-      if (pos('/',paramstr(c))=0) and (drive='') then drive:=paramstr(c);
-	  //if (pos('/',paramstr(c))=0) and (drive<>'') and (filter<>'') then destination:=paramstr(c);      
-      end;
-  if filter='*' then filter:='';
-
-  if pos('/SQL',uppercase(cmdline))>0 then sql:=true;
-
- if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
- mft_parse (drive,filter,pos('/DR',uppercase(cmdline))>0,pos('/DT',uppercase(cmdline))>0,pos('/BACKUPMFT',uppercase(cmdline))>0);
- if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
 
 end.
