@@ -7,7 +7,7 @@ The following command line options are valid:<br>
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
 --dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
 --dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
---dt                    optional, will display deleted files<br>
+--dt                    optional, will display deleted files only<br>
 --mft_backup            optional, will backup the mft to mft.dmp - not supported in offline mode or if mft is<br>
                         fragmented<br>
 <br>
