@@ -16,13 +16,13 @@ var
   Trans: TSQLTransaction;
   Query: TSQLQuery=nil;
 
-  function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
+  function insert_db(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
   function create_db:boolean;
   function close_db:boolean;
 
 implementation
 
-function insert_db(MFT_Record_No:dword;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
+function insert_db(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
 var
   //Query: TSQLQuery;
   dummy:dword;
@@ -33,9 +33,10 @@ begin
    Query.Database := Conn;
 
    // Insertion d'un enregistrement
-         Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
-                           'VALUES (:MFT_Record_No, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastWriteTime, :LastAccessTime, :FileAttributes, :Flags)';
+         Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, ParentReferenceNo, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
+                           'VALUES (:MFT_Record_No, :ParentReferenceNo, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastWriteTime, :LastAccessTime, :FileAttributes, :Flags)';
          Query.Params.ParamByName('MFT_Record_No').AsInteger := MFT_Record_No;
+         Query.Params.ParamByName('ParentReferenceNo').AsLargeInt := ParentReferenceNo;
          Query.Params.ParamByName('FileName').AsString := FileName;
          Query.Params.ParamByName('FilePath').AsString := FilePath;
          Query.Params.ParamByName('FileSize').AsLargeInt  := FileSize;
@@ -79,6 +80,7 @@ begin
   Query.SQL.Text := 'CREATE TABLE IF NOT EXISTS files (' +
                     'ID INTEGER PRIMARY KEY, ' +
                     'MFT_Record_No INTEGER, ' +
+                    'ParentReferenceNo INTEGER, ' +
                     'FileName TEXT, ' +
                     'FilePath TEXT, ' +
                     'FileSize INTEGER, ' +

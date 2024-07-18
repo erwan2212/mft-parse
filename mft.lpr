@@ -710,9 +710,11 @@ begin
       if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
       begin
       DataAttributeHeader := FindAttributeByType(MFTData, atAttributeData,false,@AttributeOffset);
+      location:='';
+      FileSize := 0;
+      bresident:=false;
       if DataAttributeHeader<>nil then
       begin
-        location:='';
         New(pDataAttributeHeader);
         //ZeroMemory(pDataAttributeHeader, SizeOf(TRECORD_ATTRIBUTE));
         CopyMemory(pDataAttributeHeader, @DataAttributeHeader[0], SizeOf(TRECORD_ATTRIBUTE));
@@ -792,7 +794,6 @@ begin
            FileSizeArray := Copy(DataAttributeHeader, $10+(pDataAttributeHeader^.NonResident)*$20,
                                  (pDataAttributeHeader^.NonResident+$1)*$4 );
            //filesize:= ByteSwap64 (pDataAttribute(@DataAttributeHeader[0])^.DataSize) ;
-           FileSize := 0;
            for i:=Length(FileSizeArray)-1 downto 0 do FileSize := (FileSize shl 8)+Ord(FileSizeArray[i]);
            Dispose(pDataAttributeHeader);
       end
@@ -813,13 +814,13 @@ begin
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
             then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-                              else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
+                              else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end
          else
          begin
          if sql=false
             then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-            else insert_db(pFileRecord^.MFT_Record_No,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
+            else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
          end;
 
 
