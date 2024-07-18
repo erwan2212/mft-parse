@@ -6,7 +6,7 @@ Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.
 $databasePath = "mft.db3"
 
 # SQL query to execute
-$query = "select * from files where (FileAttributes & 0x800)=0x800"
+$query = "select * from files where (FileAttributes & 0x800)=0x800 and flags=1"
 
 # Function to execute the query and return the results
 function Execute-SQLiteQuery {
