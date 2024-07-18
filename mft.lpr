@@ -632,6 +632,9 @@ begin
     //ZeroMemory(pFileRecord, SizeOf(TFILE_RECORD)); //save a few cycles?
     CopyMemory(pFileRecord, @MFTData[0], SizeOf(TFILE_RECORD));
 
+    flags:=0;
+    filename:='';filepath:='';
+
 
 //mft header is usually 56 bytes - offset 20 & 21 i.e (1st) attributeoffset
 //followed by attributes
@@ -666,6 +669,7 @@ begin
       end
       else // if FileNameAttributeData<>nil then
       begin
+        //OutputDebugString(PChar('warning #1, pfilerecord disposed:'+IntToStr(CurrentRecordCounter)));
         Dispose(pFileRecord);
         continue;
       end;
@@ -694,6 +698,7 @@ begin
       end
       else //if StandardInformationAttributeData<>nil then
       begin
+        //OutputDebugString(PChar('warning #2, pfilerecord disposed:'+IntToStr(CurrentRecordCounter)));
         Dispose(pFileRecord);
         continue;
       end;
@@ -714,6 +719,7 @@ begin
         //writeln(inttohex(ord(DataAttributeHeader[0]),1)); -> $80
         //https://www.writeblocked.org/resources/NTFS_CHEAT_SHEETS.pdf
         //resident attribute header
+        bresident:= pDataAttributeHeader^.NonResident=0 ;
         if pDataAttributeHeader^.NonResident=0 then
            begin
            CopyMemory(@datasize, @DataAttributeHeader[$10], 4);
@@ -788,13 +794,16 @@ begin
            //filesize:= ByteSwap64 (pDataAttribute(@DataAttributeHeader[0])^.DataSize) ;
            FileSize := 0;
            for i:=Length(FileSizeArray)-1 downto 0 do FileSize := (FileSize shl 8)+Ord(FileSizeArray[i]);
-           bresident:= pDataAttributeHeader^.NonResident=0 ;
            Dispose(pDataAttributeHeader);
       end
       else //if DataAttributeHeader<>nil then
       begin
-        Dispose(pFileRecord);
-        continue;
+        if (flags=0) or (filename='') then //or else we miss all folders
+          begin
+          //OutputDebugString(PChar('warning #3, pfilerecord disposed:'+IntToStr(CurrentRecordCounter)));
+          Dispose(pFileRecord);
+          continue;
+          end; //if (flags=0) or (filename='') then
       end;
       end; //if (filter='') or ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) ) then
 
