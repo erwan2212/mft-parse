@@ -213,6 +213,7 @@ var
   ParentRecordNumber: integer;
   LocalParentReference: Int64;
   ParentName: string;
+  tmp:widestring;
   //hDevice: THandle;
   dwread: LongWord;
   ParentRecordLocator: Int64;
@@ -314,7 +315,10 @@ begin
       //ZeroMemory(pFileNameAttribute, SizeOf(TFILENAME_ATTRIBUTE));
       CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
       // Gets the Path Name, which begins at offset $5A of this attribute
-         ParentName := WideString(Copy(FileNameAttributeData, $5A, 1+pFileNameAttribute^.NameLength*2));
+         //ParentName := WideString(Copy(FileNameAttributeData, $5A, 1+pFileNameAttribute^.NameLength*2));
+         tmp:=StringOfChar(' ', pFileNameAttribute^.NameLength);
+         copymemory(@tmp[1],@FileNameAttributeData[$5a],pFileNameAttribute^.NameLength*2);
+         parentname:=string(tmp);
       // Gets the Local Parent Directory Record Number :
          LocalParentReference := pFileNameAttribute^.DirectoryFileReferenceNumber;
       Dispose(pFileNameAttribute);
@@ -659,7 +663,9 @@ begin
         CopyMemory(pFileNameAttribute, @FileNameAttributeData[0], SizeOf(TFILENAME_ATTRIBUTE));
         ParentReferenceNo:=Int64Rec(pFileNameAttribute^.DirectoryFileReferenceNumber).lo;
         // Gets the File Name, which begins at offset $5A of this attribute
-           FileName := WideString(Copy(FileNameAttributeData, $5A,1+ pFileNameAttribute^.NameLength*2));
+           //FileName := WideString(Copy(FileNameAttributeData, $5A, 1+pFileNameAttribute^.NameLength*2));
+           filename:=StringOfChar(' ', pFileNameAttribute^.NameLength);
+           copymemory(@filename[1],@FileNameAttributeData[$5a],pFileNameAttribute^.NameLength*2);
            // Gets the File Path
            if 1=1 then //RetrieveDirectoryTree //very very costy !
              FilePath := GetFilePath(pFileNameAttribute^.DirectoryFileReferenceNumber)+'\'

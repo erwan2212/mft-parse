@@ -24,10 +24,10 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="--mft_filename=f:\mft.dmp.0 --drive=g:"/>
+        <CommandLineParams Value="--first_record=0 --drive=f:"/>
       </local>
     </RunParams>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="mft.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -40,6 +40,10 @@
         <Filename Value="utilsdb.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="..\rcmdline-master\rcmdline.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
