@@ -22,10 +22,10 @@ you can download from here system.data.sqlite for powershell (recommanded : .net
 <br>
 Some notes/thoughts:<br>
 <br>
-If the MFT is <b>fragmented</b>, you will need to backup it with extents-win64 like this: extents-win64.exe d:\\$mft c:\\temp\mft.dmp<br>
-Although I recommend the use of extents-win64.exe, you can also backup a fragmented mft the followong way : mft-win32.exe --drive=d: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
+If the MFT is <b>fragmented</b>, you will need to backup it with extents-win64 like this: extents-win64.exe f:\\$mft c:\\temp\mft.dmp<br>
+Although I recommend the use of extents-win64.exe, you can also backup a fragmented mft the followong way : mft-win32.exe --drive=f: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
 <br>
-Then dump the mft like this (skip --db3 if you want to dump to the console) : mft-win32.exe --drive=d: --mft_filename=c:\\temp\mft.dmp --db3 <br>
+Then dump the mft like this (skip --db3 if you want to dump to the console) : mft-win32.exe --drive=f: --mft_filename=c:\\temp\mft.dmp --db3 <br>
 <br>
 If the MFT is <b>not fragmented</b>, then this is as simple as run the following command : mft-win32.exe --drive=f:<br>
 <br>
