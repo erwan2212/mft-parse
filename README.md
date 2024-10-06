@@ -58,4 +58,9 @@ Value	Description<br>
 0x1000	Offline<br>
 0x2000	Content not indexed<br>
 0x4000	Encrypted<br>
-<br>
+<br><br>
+Flag	Description<br>
+0x01	Record is in use<br>
+0x02	Record is a directory (FileName index present)<br>
+0x04	Record is an exension (Set for records in the $Extend directory)<br>
+0x08	Special index present (Set for non-directory records containing an index: $Secure, $ObjID, $Quota, $Reparse)<br>
