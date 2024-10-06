@@ -59,6 +59,8 @@ Value	Description<br>
 0x2000	Content not indexed<br>
 0x4000	Encrypted<br>
 <br><br>
+<b>Flags</b> is also stored - below the possible values<br>
+<br>
 Flag	Description<br>
 0x01	Record is in use<br>
 0x02	Record is a directory (FileName index present)<br>
