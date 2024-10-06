@@ -1,5 +1,5 @@
 # Chemin de la base de données SQLite
-$dbPath = "mft.db3"
+$dbPath = "mft-dbs.db3"
 
 # Chemin de sortie pour le fichier CSV
 $outputCsvPath = "files.csv"
@@ -15,7 +15,8 @@ $connection.ConnectionString = $connectionString
 $connection.Open()
 
 # Définir la requête SQL pour récupérer toutes les données de la table "files"
-$query = "SELECT * FROM files"
+#$query = "SELECT * FROM files"
+$query = "SELECT * FROM files WHERE CAST(substr(FileChangeTime, 7, 4) AS INTEGER) < 2020 and flags=1"
 
 # Créer une commande SQLite
 $command = $connection.CreateCommand()
