@@ -18,12 +18,14 @@ select-OLD25.ps1 will output top 25 oldest files.<br>
 select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
 select-SIZEPERYEAR.ps1 will output the sum of filesizes per year.<br>
 select-COMPRESSED.ps1 will display files with flag=compressed.<br>
+select-CSV.ps1 will create a CSV file out of the DB3.<br>
+select-delete-file.ps1 will deleted all files prior to 1996 from the DB3.<br>
 you can download from here system.data.sqlite for powershell (recommanded : .net 4.6) : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
 <br>
 Some notes/thoughts:<br>
 <br>
 If the MFT is <b>fragmented</b>, you will need to backup it with extents-win64 like this: extents-win64.exe f:\\$mft c:\\temp\mft.dmp<br>
-Although I recommend the use of extents-win64.exe, you can also backup a fragmented mft the followong way : mft-win32.exe --drive=f: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
+Although I recommend the use of extents-win64.exe, you can also backup a fragmented mft the followong way ( a file named _$mft will be created on your folder) : mft-win32.exe --drive=f: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
 <br>
 Then dump the mft like this (skip --db3 if you want to dump to the console) : mft-win32.exe --drive=f: --mft_filename=c:\\temp\mft.dmp --db3 <br>
 <br>
