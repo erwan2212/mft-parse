@@ -31,7 +31,7 @@ Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
 So you can end up in a situation where your FileCreationTime is later than your FileChangeTime.<br>
 <br>
-<b>FileChangeTime</b> is the time that the file content was updated.<br>
+<b>FileChangeTime</b> is the time that the file content was updated. Actually the only field you can really trust.<br>
 <br>
 <b>LastWriteTime</b> is the same as FileChangeTime except that it will also be updated when metadata is changed (r/w, acl, etc). <br>
 This date and time refers to when the MFT record itself was last changed. This date and time field is not displayed to a user.<br>
