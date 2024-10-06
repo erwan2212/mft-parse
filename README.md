@@ -12,14 +12,15 @@ The following command line options are valid:<br>
 --mft_backup            optional, will backup the mft to mft.dmp - not supported in offline mode or if mft is<br>
                         fragmented<br>
 <br>
-select.ps1 is a powershell example to query the mft.db3.<br>
-select-BIG25.ps1 will output top 25 biggest files.<br>
-select-OLD25.ps1 will output top 25 oldest files.<br>
-select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
-select-SIZEPERYEAR.ps1 will output the sum of filesizes per year.<br>
-select-COMPRESSED.ps1 will display files with flag=compressed.<br>
-select-CSV.ps1 will create a CSV file listing all files prior to 2020 out of the DB3.<br>
-select-delete-file.ps1 will deleted all files prior to 1996 out of the DB3.<br>
+Here below some powershell examples to play with the sqlite DB:<br>
+-select.ps1 is a powershell example to query the mft.db3.<br>
+-select-BIG25.ps1 will output top 25 biggest files.<br>
+-select-OLD25.ps1 will output top 25 oldest files.<br>
+-select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
+-select-SIZEPERYEAR.ps1 will output the sum of filesizes per year.<br>
+-select-COMPRESSED.ps1 will display files with flag=compressed.<br>
+-select-CSV.ps1 will create a CSV file listing all files prior to 2020 out of the DB3.<br>
+-select-delete-file.ps1 will deleted all files prior to 1996 out of the DB3.<br>
 you can download from here system.data.sqlite for powershell (recommanded : .net 4.6) : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
 <br>
 Some notes/thoughts:<br>
