@@ -71,6 +71,7 @@ Value	Description<br>
 <b>Flags</b> is also stored - below the possible values (1 is a file, 3 is a directory...)<br>
 <br>
 Flag	Description<br>
+0x00	Record is not in use (i.e deleted)<br>
 0x01	Record is in use<br>
 0x02	Record is a directory (FileName index present)<br>
 0x04	Record is an exension (Set for records in the $Extend directory)<br>
