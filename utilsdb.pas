@@ -59,6 +59,17 @@ begin
    result:=true;
 end;
 
+{
+SQLite does not have a storage class set aside for storing dates and/or times. Instead, the built-in Date And Time Functions of SQLite are capable of storing dates and times as TEXT, REAL, or INTEGER values:
+TEXT as ISO8601 strings ("YYYY-MM-DD HH:MM:SS.SSS").
+REAL as Julian day numbers, the number of days since noon in Greenwich on November 24, 4714 B.C. according to the proleptic Gregorian calendar.
+INTEGER as Unix Time, the number of seconds since 1970-01-01 00:00:00 UTC.
+
+If you use TEXT storage class to store date and time value, you need to use the ISO8601 string format as follows:
+YYYY-MM-DD HH:MM:SS.SSS
+... or else dont use date and time functions against the stored data
+}
+
 function create_db:boolean;
 var
 //Query: TSQLQuery;
