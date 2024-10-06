@@ -41,4 +41,4 @@ $results = Execute-SQLiteQuery -databasePath $databasePath -query $query
 
 # Display the results
 # $results | Format-Table -AutoSize
-$results
+$results 
