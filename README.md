@@ -1,6 +1,6 @@
 The following command line options are valid:<br>
 <br>
---drive=<string>        selected drive/partition to dump mft for (default: c:)<br>
+--drive=<string>        selected drive/partition to dump mft for - if offline, only used to build paths (default: c:)<br>
 --filter=<string>       optional, pattern to filter files<br>
 --filename=<string>     optional, will use an offline mft dump<br>
 --first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
