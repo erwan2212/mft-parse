@@ -39,7 +39,8 @@ This date and time refers to when the MFT record itself was last changed. This d
 <b>LastAccessTime</b> cannot be trusted as it can be disabled and not all windows OS's have the same settings here.<br>
 Simply cannot be trusted...<br>
 <br>
-Beware : datetime is stored as text in db3 : do not use date/time functions against that stored data.
+Beware : datetime is stored as text in db3 : do not use date/time functions against that stored data but use string functions.
+Alternative in a future version would be to store dates in ISO8601 format YYYY-MM-DD HH:MM:SS.SSS.
 <br><br>
 <b>FileAttributes</b> is also stored - below the possible values<br>
 <br>
