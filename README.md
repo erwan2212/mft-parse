@@ -59,7 +59,7 @@ Value	Description<br>
 0x2000	Content not indexed<br>
 0x4000	Encrypted<br>
 <br><br>
-<b>Flags</b> is also stored - below the possible values<br>
+<b>Flags</b> is also stored - below the possible values (1 is a file, 3 is a directory...)<br>
 <br>
 Flag	Description<br>
 0x01	Record is in use<br>
