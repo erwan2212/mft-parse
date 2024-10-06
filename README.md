@@ -2,8 +2,9 @@ The following command line options are valid:<br>
 <br>
 --drive=<string>        selected drive/partition to dump mft for - if offline, only used to build paths (default: c:)<br>
 --filter=<string>       optional, pattern to filter files<br>
---filename=<string>     optional, will use an offline mft dump<br>
+--mft_filename=<string> optional, will use an offline mft dump<br>
 --first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
+--last_record=<int>     optional, last mft record to stop enumerating<br>
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
 --dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
 --dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
