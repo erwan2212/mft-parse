@@ -34,6 +34,8 @@ If the MFT is <b>not fragmented</b>, then this is as simple as run the following
 <br>
 Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
 <br>
+Some notes about the retrieved filerecords fields:<br>
+<br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
 So you can end up in a situation where your FileCreationTime is later than your FileChangeTime.<br>
