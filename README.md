@@ -27,6 +27,8 @@ Although I recommend the use of extents-win64.exe, you can also backup a fragmen
 <br>
 Then dump the mft like this (skip --db3 if you want to dump to the console) : mft-win32.exe --drive=d: --mft_filename=c:\\temp\mft.dmp --db3 <br>
 <br>
+If the MFT is <b>not fragmented</b>, then this is as simple as run the following command : mft-win32.exe --drive=f:<br>
+<br>
 Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
