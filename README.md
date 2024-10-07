@@ -12,14 +12,15 @@ The following command line options are valid:<br>
 --mft_backup            optional, will backup the mft to mft.dmp - not supported in offline mode or if mft is<br>
                         fragmented<br>
 <br>
-select.ps1 is a powershell example to query the mft.db3.<br>
-select-BIG25.ps1 will output top 25 biggest files.<br>
-select-OLD25.ps1 will output top 25 oldest files.<br>
-select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
-select-SIZEPERYEAR.ps1 will output the sum of filesizes per year.<br>
-select-COMPRESSED.ps1 will display files with flag=compressed.<br>
-select-CSV.ps1 will create a CSV file out of the DB3.<br>
-select-delete-file.ps1 will deleted all files prior to 1996 from the DB3.<br>
+Here below some powershell examples to play with the sqlite DB:<br>
+-select.ps1 is a powershell example to query the mft.db3.<br>
+-select-BIG25.ps1 will output top 25 biggest files.<br>
+-select-OLD25.ps1 will output top 25 oldest files.<br>
+-select-SIZEBEFORE2020.ps1 will output the sum of filesizes changed prior to 2020.<br>
+-select-SIZEPERYEAR.ps1 will output the sum of filesizes per year.<br>
+-select-COMPRESSED.ps1 will display files with flag=compressed.<br>
+-select-CSV.ps1 will create a CSV file listing all files prior to 2020 out of the DB3.<br>
+-select-delete-file.ps1 will deleted all files prior to 1996 out of the DB3.<br>
 you can download from here system.data.sqlite for powershell (recommanded : .net 4.6) : https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki<br>
 <br>
 Some notes/thoughts:<br>
@@ -32,6 +33,8 @@ Then dump the mft like this (skip --db3 if you want to dump to the console) : mf
 If the MFT is <b>not fragmented</b>, then this is as simple as run the following command : mft-win32.exe --drive=f:<br>
 <br>
 Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
+<br>
+Some notes about the retrieved filerecords fields:<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
 It will be updated if you move a file to a different partition/disk on your computer, but because the content hasn't changed, the LastWriteTime won't be.<br>
@@ -68,6 +71,7 @@ Value	Description<br>
 <b>Flags</b> is also stored - below the possible values (1 is a file, 3 is a directory...)<br>
 <br>
 Flag	Description<br>
+0x00	Record is not in use (i.e deleted)<br>
 0x01	Record is in use<br>
 0x02	Record is a directory (FileName index present)<br>
 0x04	Record is an exension (Set for records in the $Extend directory)<br>
