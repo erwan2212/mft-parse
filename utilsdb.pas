@@ -88,6 +88,9 @@ begin
   if query=nil then Query := TSQLQuery.Create(nil);
   Query.Database := Conn;
 
+  Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
+  Query.ExecSQL;
+
   Query.SQL.Text := 'CREATE TABLE IF NOT EXISTS files (' +
                     'ID INTEGER PRIMARY KEY, ' +
                     'MFT_Record_No INTEGER, ' +
