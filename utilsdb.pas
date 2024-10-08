@@ -88,6 +88,10 @@ begin
   if query=nil then Query := TSQLQuery.Create(nil);
   Query.Database := Conn;
 
+  //chcp 65001 ?
+  //Query.SQL.Text := 'pragma ENCODING="UTF-16";';
+  //Query.ExecSQL;
+
   Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
   Query.ExecSQL;
 
