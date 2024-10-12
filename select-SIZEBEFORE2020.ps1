@@ -3,7 +3,7 @@
 Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.dll"
 
 # Path to the SQLite database file
-$databasePath = "mft.db3"
+$databasePath = Resolve-Path "mft.db3"
 
 # SQL query to execute
 $query = "SELECT SUM(FileSize) / (1024*1024) AS TotalSizeBefore FROM files WHERE CAST(substr(FileChangeTime, 7, 4) AS INTEGER) < 2020 and flags=1;"
@@ -19,7 +19,7 @@ function Execute-SQLiteQuery {
     $connectionString = "Data Source=$databasePath;Version=3;"
     $connection = New-Object System.Data.SQLite.SQLiteConnection
     $connection.ConnectionString = $connectionString
-    $connection.Open()
+    $connection.Open
 
     # Create a command to execute the SQL query
     $command = $connection.CreateCommand()

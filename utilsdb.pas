@@ -16,11 +16,49 @@ var
   Trans: TSQLTransaction;
   Query: TSQLQuery=nil;
 
+  function insert_db_wide(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:widestring;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
   function insert_db(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
-  function create_db:boolean;
+  function create_db(encoding:string=''):boolean;
   function close_db:boolean;
 
 implementation
+
+function insert_db_wide(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:widestring;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
+var
+  //Query: TSQLQuery;
+  dummy:dword;
+begin
+  result:=false;
+   //Trans.StartTransaction;
+   if query=nil then Query := TSQLQuery.Create(nil);
+   Query.Database := Conn;
+
+   // Insertion d'un enregistrement
+         Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, ParentReferenceNo, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
+                           'VALUES (:MFT_Record_No, :ParentReferenceNo, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastWriteTime, :LastAccessTime, :FileAttributes, :Flags)';
+         Query.Params.ParamByName('MFT_Record_No').AsInteger := MFT_Record_No;
+         Query.Params.ParamByName('ParentReferenceNo').AsLargeInt := ParentReferenceNo;
+         Query.Params.ParamByName('FileName').AswideString := FileName;
+         Query.Params.ParamByName('FilePath').AswideString := FilePath;
+         Query.Params.ParamByName('FileSize').AsLargeInt  := FileSize;
+         Query.Params.ParamByName('FileCreationTime').AsString := FileCreationTime;
+         Query.Params.ParamByName('FileChangeTime').AsString := FileChangeTime;
+         Query.Params.ParamByName('LastWriteTime').AsString := LastWriteTime;
+         Query.Params.ParamByName('LastAccessTime').AsString := LastAccessTime;
+         Query.Params.ParamByName('FileAttributes').AsInteger := FileAttributes;
+         Query.Params.ParamByName('Flags').AsInteger := Flags;
+         try
+         Query.ExecSQL;
+         except
+         on e:exception do writeln(inttostr(MFT_Record_No)+' - '+e.message);
+         end;
+
+         // Validation de la transaction
+         //Trans.Commit;
+
+    //Query.Free;
+   result:=true;
+end;
 
 function insert_db(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
 var
@@ -70,7 +108,7 @@ YYYY-MM-DD HH:MM:SS.SSS
 ... or else dont use date and time functions against the stored data
 }
 
-function create_db:boolean;
+function create_db(encoding:string=''):boolean;
 var
 //Query: TSQLQuery;
   dummy:dword;
@@ -89,8 +127,13 @@ begin
   Query.Database := Conn;
 
   //chcp 65001 ?
-  //Query.SQL.Text := 'pragma ENCODING="UTF-16";';
-  //Query.ExecSQL;
+  if encoding<>'' then
+     begin
+       writeln('setting ENCODING to '+encoding);
+       Query.SQL.Text := 'pragma ENCODING="'+encoding+'";';
+       //Query.SQL.Text := 'pragma ENCODING="UTF-16";';
+       Query.ExecSQL;
+     end;
 
   Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
   Query.ExecSQL;

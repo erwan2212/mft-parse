@@ -1,12 +1,13 @@
 # Import the SQLite module
 # https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki
-Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.dll"
+#Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.dll"
+Add-Type -Path ".\sqlite-netFx46-binary-bundle-x64-2015-1.0.119.0\System.Data.SQLite.dll"
 
 # Path to the SQLite database file
-$databasePath = "mft.db3"
+$databasePath = Resolve-Path "mft.db3"
 
 # SQL query to execute
-$query = "SELECT * FROM files"
+$query = "SELECT * FROM files where id=20"
 
 #utf16le
 function Execute-SQLiteQuery3 {
@@ -103,7 +104,7 @@ function Execute-SQLiteQuery {
     $connectionString = "Data Source=$databasePath;Version=3;"
     $connection = New-Object System.Data.SQLite.SQLiteConnection
     $connection.ConnectionString = $connectionString
-    $connection.Open()
+    $connection.Open
 
     # Create a command to execute the SQL query
     $command = $connection.CreateCommand()
@@ -112,13 +113,15 @@ function Execute-SQLiteQuery {
     # Execute the query and load the results into a DataTable
     $adapter = New-Object System.Data.SQLite.SQLiteDataAdapter $command
     $dataTable = New-Object System.Data.DataTable
-    $adapter.Fill($dataTable)
+    $adapter.fill($dataTable)
 
     # Close the connection
     $connection.Close()
 
     return $dataTable
 }
+#$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+#[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # Execute the query and store the results
 $results = Execute-SQLiteQuery -databasePath $databasePath -query $query

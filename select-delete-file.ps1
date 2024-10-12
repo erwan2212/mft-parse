@@ -1,5 +1,5 @@
 # Chemin de la base de données SQLite
-$dbPath = "mft.db3"
+$databasePath = Resolve-Path "mft.db3"
 
 # Import the SQLite module
 # https://system.data.sqlite.org/index.html/doc/trunk/www/downloads-unsup.wiki
@@ -9,7 +9,7 @@ Add-Type -Path "C:\Program Files\System.Data.SQLite\2015\bin\System.Data.SQLite.
 $connectionString = "Data Source=$dbPath;Version=3;"
 $connection = New-Object System.Data.SQLite.SQLiteConnection
 $connection.ConnectionString = $connectionString
-$connection.Open()
+$connection.Open
 
 # Définir la requête SQL pour récupérer les fichiers avant 1996
 $query = @"

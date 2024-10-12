@@ -1,6 +1,6 @@
 program mft;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}  //->string=ansistring
 
 uses
 
@@ -33,6 +33,7 @@ var
   drive:string='';
   mft_filename:string='';
   sql:boolean=false;
+  encoding:string='';
   dr_backup:boolean=false;
   first_record:longint=16;
   last_record:longint=0;
@@ -819,14 +820,25 @@ begin
       if (filter<>'') then
          begin
          if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-                              else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
-         end
+            then if sql=false
+                    then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+                    else
+                      begin
+                      if pos('utf-16',lowercase(encoding))>0
+                         then insert_db_wide(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags )
+                         else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
+                      end; //if pos('utf-16',lowercase(encoding))>0
+         end //if (filter<>'') then
          else
          begin
          if sql=false
             then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-            else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
+            else
+              begin
+              if pos('utf-16',lowercase(encoding))>0
+                 then insert_db_wide(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags )
+                 else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
+              end; //if pos('utf-16',lowercase(encoding))>0
          end;
 
 
@@ -877,6 +889,7 @@ begin
   cmd.declareInt ('first_record', 'optional, first mft record to start enumerating',16);
   cmd.declareInt ('last_record', 'optional, last mft record to stop enumerating',0);
   cmd.declareflag('db3', 'optional, will dump records to mft.db3 sqlite DB');
+  cmd.declareString('encoding', 'optional, will set the sqlite encoding (default=utf-8)','');
   cmd.declareflag('dr', 'optional, will display dataruns i.e clusters used by a file - needs filter flag');
   cmd.declareflag('dr_backup', 'optional, will dump dataruns i.e clusters used by a file - needs dr flag');
   cmd.declareflag('dt', 'optional, will display deleted files');
@@ -888,11 +901,12 @@ begin
   filter:=cmd.readString ('filter');if filter='*' then filter:='';
   mft_filename:=cmd.readString ('mft_filename');
   sql:=cmd.readFlag ('db3');
+  encoding:=cmd.readString ('encoding');
   first_record:=cmd.readint ('first_record');
   last_record:=cmd.readint ('last_record');
   dr_backup:=cmd.readFlag ('dr_backup');if mft_filename<>'' then dr_backup:=false;
 
-  if sql=true then if create_db=false then begin writeln ('create_db failed');exit; end;
+  if sql=true then if create_db(encoding)=false then begin writeln ('create_db failed');exit; end;
   mft_parse (drive,filter,cmd.readFlag ('dr'),cmd.readFlag ('dt'),cmd.readFlag ('mft_backup'));
   if sql=true then if close_db=false then begin writeln ('close_db failed');exit; end;
 
