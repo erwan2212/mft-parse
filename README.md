@@ -6,6 +6,7 @@ The following command line options are valid:<br>
 --first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
 --last_record=<int>     optional, last mft record to stop enumerating<br>
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
+--encoding=<string>             optional, will set the sqlite encoding (default=utf-8)<br>
 --dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
 --dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
 --dt                    optional, will display deleted files only<br>
@@ -50,6 +51,8 @@ Simply cannot be trusted...<br>
 <br>
 <b>Beware</b>, datetime is stored as text in db3 using your regional settings : do not use date/time functions against that stored data but use string functions.
 Alternative in a future version would be to store dates in ISO8601 format YYYY-MM-DD HH:MM:SS.SSS.
+<br><br>
+<b>Default encoding</b> is UTF-8 however you can use --encoding=UTF-16 if you are struggling with ascii characters > 127 (which will be stored as blob in UTF-8 mode and possibly troublesome on the console).
 <br><br>
 <b>FileAttributes</b> is also stored - below the possible values<br>
 <br>
