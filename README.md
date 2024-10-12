@@ -22,7 +22,7 @@ Here below some powershell examples to play with the sqlite DB:<br>
 -select-COMPRESSED.ps1 will display files with flag=compressed.<br>
 -select-CSV.ps1 will create a CSV file listing all files prior to 2020 out of the DB3.<br>
 -select-delete-file.ps1 will deleted all files prior to 1996 out of the DB3.<br>
-you can download from here system.data.sqlite for powershell (recommended : .net 4.6) : https://www.sqlite.org/download.html <br>
+you can download from here system.data.sqlite for powershell (recommended : sqlite-netFx46-binary-bundle-x64-2015-1.0.119.0) : https://www.sqlite.org/download.html <br>
 <br>
 Some notes/thoughts:<br>
 <br>
