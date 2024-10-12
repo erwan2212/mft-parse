@@ -52,7 +52,7 @@ Simply cannot be trusted...<br>
 <b>Beware</b>, datetime is stored as text in db3 using your regional settings : do not use date/time functions against that stored data but use string functions.
 Alternative in a future version would be to store dates in ISO8601 format YYYY-MM-DD HH:MM:SS.SSS.
 <br><br>
-<b>Default encoding</b> is UTF-8 however you can use --encoding=UTF-16 if you are struggling with ascii characters > 127 (which will be stored as blob in UTF-8 mode and possibly troublesome on the console).
+<b>Default encoding</b> is UTF-8 however you can use --encoding=UTF-16 if you are struggling with ascii characters > 127 (which will be stored as blob in UTF-8 mode and possibly troublesome on a UTF-16 console).
 <br><br>
 <b>FileAttributes</b> is also stored - below the possible values<br>
 <br>
