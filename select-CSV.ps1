@@ -46,7 +46,6 @@ while ($reader.Read) {
         FileAttributes     = $reader["FileAttributes"]
         Flags              = $reader["Flags"]
     }
-
     # Ajouter l'objet au tableau de résultats
     $data += $row
 }
