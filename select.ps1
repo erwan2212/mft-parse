@@ -7,6 +7,7 @@ Add-Type -Path ".\sqlite-netFx46-binary-bundle-x64-2015-1.0.119.0\System.Data.SQ
 $databasePath = Resolve-Path "mft.db3"
 
 # SQL query to execute
+#$query = "SELECT * FROM files where id=20"
 $query = "SELECT * FROM files where id=20"
 
 #utf16le
