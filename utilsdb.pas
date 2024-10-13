@@ -83,6 +83,7 @@ begin
    // Insertion d'un enregistrement
          Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, ParentReferenceNo, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
                            'VALUES (:MFT_Record_No, :ParentReferenceNo, :FileName, :FilePath, :FileSize, :FileCreationTime, :FileChangeTime, :LastWriteTime, :LastAccessTime, :FileAttributes, :Flags)';
+         Query.Prepare;
          Query.Params.ParamByName('MFT_Record_No').AsInteger := MFT_Record_No;
          Query.Params.ParamByName('ParentReferenceNo').AsLargeInt := ParentReferenceNo;
          Query.Params.ParamByName('FileName').AsString := FileName;
@@ -126,25 +127,31 @@ begin
   {$i-}deletefile('mft.db3'){$i-};
   result:=false;
   try
+  //init
   Conn := TSQLite3Connection.Create(nil);
   Trans := TSQLTransaction.Create(nil);
+  if query=nil then Query := TSQLQuery.Create(nil);
+  //config
   Conn.DatabaseName := 'mft.db3';
   Conn.Transaction := Trans;
   Trans.Database := Conn;
+  Query.Database := Conn;
+  Query.Transaction := Trans; //needed?
+  //
   Conn.Open;
   Trans.StartTransaction;
-  if query=nil then Query := TSQLQuery.Create(nil);
-  Query.Database := Conn;
 
   //sqlite_version;
+
+  //Conn.ExecuteDirect('PRAGMA synchronous = OFF;'); //or normal --> Safety level may not be changed inside a transaction
+
+  //Conn.ExecuteDirect('PRAGMA journal_mode = MEMORY;');   //or OFF
 
   //chcp 65001 ?
   if encoding<>'' then
      begin
        writeln('setting ENCODING to '+encoding);
-       Query.SQL.Text := 'pragma ENCODING="'+encoding+'";';
-       //Query.SQL.Text := 'pragma ENCODING="UTF-16";';
-       Query.ExecSQL;
+       Conn.ExecuteDirect('pragma ENCODING="'+encoding+'";');
      end;
 
   {
@@ -153,10 +160,11 @@ begin
   writeln('sqlite3_threadsafe='+inttostr(sqlite3_threadsafe));
   }
 
-  Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
-  Query.ExecSQL;
+  //Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
+  //Query.ExecSQL;
+  Conn.ExecuteDirect('DROP TABLE IF EXISTS files;');
 
-  Query.SQL.Text := 'CREATE TABLE IF NOT EXISTS files (' +
+  Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS files (' +
                     'ID INTEGER PRIMARY KEY, ' +
                     'MFT_Record_No INTEGER, ' +
                     'ParentReferenceNo INTEGER, ' +
@@ -168,8 +176,8 @@ begin
                     'LastWriteTime TEXT, ' +
                     'LastAccessTime TEXT, '+
                     'FileAttributes INTEGER, '+
-                    'Flags INTEGER)';
-   Query.ExecSQL;
+                    'Flags INTEGER);');
+
    Trans.Commit;
    //Query.Free;
    writeln('***************************************');
