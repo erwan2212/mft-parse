@@ -5,8 +5,9 @@ The following command line options are valid:<br>
 --mft_filename=<string> optional, will use an offline mft dump<br>
 --first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
 --last_record=<int>     optional, last mft record to stop enumerating<br>
+--record=<int>          optional, specific record (default: -1)
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
---encoding=<string>             optional, will set the sqlite encoding (default=utf-8)<br>
+--encoding=<string>     optional, will set the sqlite encoding (default=utf-8)<br>
 --dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
 --dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
 --dt                    optional, will display deleted files only<br>
@@ -31,7 +32,7 @@ extents-win64.exe f:\\$mft c:\\temp\mft.dmp<br>
 Although I recommend the use of extents-win64.exe, you can also backup a fragmented mft the followong way ( a file named _$mft will be created on your folder) :<br>
 mft-win32.exe --drive=f: --filter=$mft --first_record=0 --last_record=15 --dr --dr_backup<br>
 or<br>
-mft-win32.exe --drive=f: --record=0  --dr --dr_backup
+mft-win32.exe --drive=f: --record=0  --dr --dr_backup (since $mft is always at record=0)
 <br>
 Then dump the mft like this (skip --db3 if you want to dump to the console) : mft-win32.exe --drive=f: --mft_filename=c:\\temp\mft.dmp --db3 <br>
 <br>
