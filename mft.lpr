@@ -33,13 +33,17 @@ var
   drive:string='';
   mft_filename:string='';
   sql:boolean=false;
+  csv:boolean=false;
   encoding:string='';
+  separator:string='';
   dr_backup:boolean=false;
   first_record:longint=16;
   last_record:longint=0;
+  one_record:longint=-1;
   //
   hdevice:thandle=thandle(-1);
   dst:thandle=thandle(-1);
+  hcsvfile:thandle=thandle(-1);
   //
   cmd:TCommandLineReader;
 
@@ -339,6 +343,24 @@ begin
 
 end;
 
+procedure writecsv(msg:string;sep:string='');
+var
+  dwwritten:dword;
+  tmp:string;
+begin
+   if hcsvfile=thandle(-1) then
+      begin
+      hcsvfile := CreateFile('mft.csv', GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE, nil, CREATE_ALWAYS, 0, 0);
+      tmp:='mft_record_no|ParentReferenceNo|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags'+#13#10;
+      if sep<>'' then tmp:=stringreplace(tmp,'|',sep,[rfReplaceAll]);
+      writefile(hcsvfile,tmp[1],length(tmp),dwwritten,nil);
+      end;
+
+      msg:=msg+#13#10;
+      if sep<>'' then msg:=stringreplace(msg,'|',sep,[rfReplaceAll]);
+      writefile(hcsvfile,msg[1],length(msg),dwwritten,nil);
+
+end;
 
 procedure log(msg:string);
 begin
@@ -598,7 +620,7 @@ begin
   writeln('***************************************');
 
   if bdatarun =false
-     then if sql=false then log('mft_record_no|ParentReferenceNo|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags');
+     then if ((sql=false) and (csv=false)) then log('mft_record_no|ParentReferenceNo|fileName|filepath|FileSize|FileCreationTime|FileChangeTime|LastWriteTime|LastAccessTime|CurrentRecordLocator|resident|location|flags');
 
   // Skips System File Records
   //log( 'Analyzing File Record 16 out of '+IntToStr(MASTER_FILE_TABLE_RECORD_COUNT));
@@ -608,6 +630,7 @@ begin
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . //
 
   if last_record=0 then last_record:=MASTER_FILE_TABLE_RECORD_COUNT-1;
+  if one_record<>-1 then begin first_record:=one_record;last_record:=one_record ;end;
   for CurrentRecordCounter := first_record to last_record do //0 if you want $mft etc
   begin
 
@@ -743,7 +766,7 @@ begin
            //writeln(inttohex(CurrentRecordLocator+AttributeOffset+$40,8));
            location:='N/A';
            //datarun has been requested
-           if (bdatarun=true) and (pos(lowercase(filter),lowercase(filename))>0) then
+           if (bdatarun=true) and ((pos(lowercase(filter),lowercase(filename))>0) or (one_record<>-1)) then
            begin
            writeln(filename);
            datarun:=0;p:=0;prev:=0;count:=0;vcn:=0;
@@ -819,36 +842,44 @@ begin
       begin
       if (filter<>'') then
          begin
-         if (pos(lowercase(filter),lowercase(filename))>0)
-            then if sql=false
-                    then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-                    else
-                      begin
+         if (pos(lowercase(filter),lowercase(filename))>0) then
+            if sql=false then
+               begin
+                     if csv=false
+                        then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+                        else writecsv(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags),separator);
+               end //if sql=false then
+               else //sql=true
+               begin
                       if pos('utf-16',lowercase(encoding))>0
                          then insert_db_wide(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags )
                          else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
-                      end; //if pos('utf-16',lowercase(encoding))>0
+               end; //sql=true
          end //if (filter<>'') then
          else
          begin
-         if sql=false
-            then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
-            else
+         if sql=false then
+            begin
+            if csv=false
+               then log(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags))
+               else writecsv(inttostr(pFileRecord^.MFT_Record_No)+'|'+inttostr(ParentReferenceNo)+'|'+fileName+'|'+filepath+'|'+IntToStr(FileSize)+'|'+FormatDateTime('c',FileCreationTime)+'|'+FormatDateTime('c',FileChangeTime)+'|'+FormatDateTime('c',LastWriteTime )+'|'+FormatDateTime('c',LastAccessTime)+'|0x'+inttohex(CurrentRecordLocator,8)+'|'+booltostr(bresident,true)+'|'+location+'|'+inttostr(pFileRecord^.Flags),separator);
+            end //if sql=false then
+            else //sql=true
               begin
               if pos('utf-16',lowercase(encoding))>0
                  then insert_db_wide(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags )
                  else insert_db(pFileRecord^.MFT_Record_No,ParentReferenceNo,string(fileName),filepath,FileSize,FormatDateTime('c',FileCreationTime),FormatDateTime('c',FileChangeTime),FormatDateTime('c',LastWriteTime),FormatDateTime('c',LastAccessTime),FileAttributes,flags );
-              end; //if pos('utf-16',lowercase(encoding))>0
+              end; //sql=true
          end;
 
 
-      end; //if bdatarun=true then
+      end; //if bdatarun=false then
 
       end;//if pFileRecord^.Flags=$1 then
 
     Dispose(pFileRecord);
 
-    if sql=true then
+    if (sql=true) or (csv=true) then
       begin
       percentage := Round((CurrentRecordCounter / MASTER_FILE_TABLE_RECORD_COUNT) * 100);
       if (percentage mod 10 = 0) and (percentage <> 0) then SetConsoleTitle(pchar('Progress:'+inttostr(percentage))); //Write('.');
@@ -888,7 +919,10 @@ begin
   cmd.declareString('mft_filename', 'optional, will use an offline mft dump');
   cmd.declareInt ('first_record', 'optional, first mft record to start enumerating',16);
   cmd.declareInt ('last_record', 'optional, last mft record to stop enumerating',0);
+  cmd.declareInt ('record', 'optional, specific record',-1);
   cmd.declareflag('db3', 'optional, will dump records to mft.db3 sqlite DB');
+  cmd.declareflag('csv', 'optional, will dump records to mft.csv');
+  cmd.declareString('separator', 'optional, will replace | by another separator in the csv file');
   cmd.declareString('encoding', 'optional, will set the sqlite encoding (default=utf-8)','');
   cmd.declareflag('dr', 'optional, will display dataruns i.e clusters used by a file - needs filter flag');
   cmd.declareflag('dr_backup', 'optional, will dump dataruns i.e clusters used by a file - needs dr flag');
@@ -901,9 +935,12 @@ begin
   filter:=cmd.readString ('filter');if filter='*' then filter:='';
   mft_filename:=cmd.readString ('mft_filename');
   sql:=cmd.readFlag ('db3');
+  csv:=cmd.readFlag ('csv');
   encoding:=cmd.readString ('encoding');
+  separator:=cmd.readString ('separator');
   first_record:=cmd.readint ('first_record');
   last_record:=cmd.readint ('last_record');
+  one_record:=cmd.readint ('record');
   dr_backup:=cmd.readFlag ('dr_backup');if mft_filename<>'' then dr_backup:=false;
 
   if sql=true then if create_db(encoding)=false then begin writeln ('create_db failed');exit; end;

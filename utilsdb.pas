@@ -1,6 +1,6 @@
 unit utilsdb;
 
-{$mode objfpc}{$H+}
+{$mode delphi}{$H+}
 
 interface
 
@@ -8,7 +8,7 @@ uses
     sqlite3conn, // Pour la connexion SQLite
     sqldb,       // Pour les composants SQL
     db,          // Pour les opérations de base de données
-    SysUtils;
+    SysUtils,windows;
 
 var
     //
@@ -20,6 +20,10 @@ var
   function insert_db(MFT_Record_No:dword;ParentReferenceNo:int64;filename,filepath:string;filesize:int64;FileCreationTime,FileChangeTime,LastWriteTime,LastAccessTime:string;FileAttributes:dword;flags:word):boolean;
   function create_db(encoding:string=''):boolean;
   function close_db:boolean;
+  procedure sqlite_version();
+
+  var
+    sqlite3_threadsafe:function():integer;stdcall;
 
 implementation
 
@@ -30,8 +34,11 @@ var
 begin
   result:=false;
    //Trans.StartTransaction;
-   if query=nil then Query := TSQLQuery.Create(nil);
-   Query.Database := Conn;
+   if query=nil then
+      begin
+        Query := TSQLQuery.Create(nil);
+        Query.Database := Conn;
+        end;
 
    // Insertion d'un enregistrement
          Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, ParentReferenceNo, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
@@ -67,8 +74,11 @@ var
 begin
   result:=false;
    //Trans.StartTransaction;
-   if query=nil then Query := TSQLQuery.Create(nil);
-   Query.Database := Conn;
+   if query=nil then
+      begin
+        Query := TSQLQuery.Create(nil);
+        Query.Database := Conn;
+        end;
 
    // Insertion d'un enregistrement
          Query.SQL.Text := 'INSERT INTO files (MFT_Record_No, ParentReferenceNo, FileName, FilePath, FileSize, FileCreationTime, FileChangeTime, LastWriteTime, LastAccessTime, FileAttributes, Flags) ' +
@@ -111,7 +121,7 @@ YYYY-MM-DD HH:MM:SS.SSS
 function create_db(encoding:string=''):boolean;
 var
 //Query: TSQLQuery;
-  dummy:dword;
+  lib:thandle;
 begin
   {$i-}deletefile('mft.db3'){$i-};
   result:=false;
@@ -126,6 +136,8 @@ begin
   if query=nil then Query := TSQLQuery.Create(nil);
   Query.Database := Conn;
 
+  //sqlite_version;
+
   //chcp 65001 ?
   if encoding<>'' then
      begin
@@ -134,6 +146,12 @@ begin
        //Query.SQL.Text := 'pragma ENCODING="UTF-16";';
        Query.ExecSQL;
      end;
+
+  {
+  lib:=loadlibrary('sqlite3.dll');
+  sqlite3_threadsafe:=getProcAddress(lib,'sqlite3_threadsafe');
+  writeln('sqlite3_threadsafe='+inttostr(sqlite3_threadsafe));
+  }
 
   Query.SQL.Text := 'DROP TABLE IF EXISTS files;';
   Query.ExecSQL;
@@ -178,6 +196,33 @@ begin
   except
     on e:exception do writeln(e.message);
   end;
+
+end;
+
+procedure sqlite_version();
+var
+  version:string;
+begin
+  if query=nil then Query := TSQLQuery.Create(nil);
+  Query.Database := Conn;
+
+
+  try
+  Query.SQL.Text := 'select sqlite_version();';
+  Query.open;
+
+      //
+      Version := Query.Fields[0].AsString;
+      WriteLn('sqlite_version: ', Version);
+
+      Query.Close;
+
+   writeln('***************************************');
+   writeln('database mft.db3 created');
+
+    except
+    on e:exception do writeln(e.message);
+    end;
 
 end;
 
