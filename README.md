@@ -5,7 +5,7 @@ The following command line options are valid:<br>
 --mft_filename=<string> optional, will use an offline mft dump<br>
 --first_record=<int>    optional, first mft record to start enumerating (default: 16)<br>
 --last_record=<int>     optional, last mft record to stop enumerating<br>
---record=<int>          optional, specific record (default: -1)
+--record=<int>          optional, specific record (default: -1)<br>
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
 --encoding=<string>     optional, will set the sqlite encoding (default=utf-8)<br>
 --csv                   optional, will dump records to mft.csv<br>
