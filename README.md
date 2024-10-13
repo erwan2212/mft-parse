@@ -8,6 +8,7 @@ The following command line options are valid:<br>
 --record=<int>          optional, specific record (default: -1)
 --db3                   optional, will dump records to mft.db3 sqlite DB<br>
 --encoding=<string>     optional, will set the sqlite encoding (default=utf-8)<br>
+--csv                   optional, will dump records to mft.csv<br>
 --dr                    optional, will display dataruns i.e clusters used by a file - needs filter flag<br>
 --dr_backup             optional, will dump dataruns i.e clusters used by a file - needs dr flag<br>
 --dt                    optional, will display deleted files only<br>
