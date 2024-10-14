@@ -766,7 +766,7 @@ begin
            //writeln(inttohex(CurrentRecordLocator+AttributeOffset+$40,8));
            location:='N/A';
            //datarun has been requested
-           if (bdatarun=true) and ((pos(lowercase(filter),lowercase(filename))>0) or (one_record<>-1)) then
+           if (bdatarun=true) and ((filter<>'') and (pos(lowercase(filter),lowercase(filename))>0) or (one_record<>-1)) then
            begin
            writeln(filename);
            datarun:=0;p:=0;prev:=0;count:=0;vcn:=0;
