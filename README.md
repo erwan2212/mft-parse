@@ -41,7 +41,8 @@ Then dump the mft like this (skip --db3 if you want to dump to the console) : mf
 If the MFT is <b>not fragmented</b>, then this is as simple as run the following command : mft-win32.exe --drive=f:<br>
 <br>
 Both <b>MBR</b> and <b>GPT</b> partitions are supported.<br>
-<br>
+<br><br>
+About <b>dataruns</b>, you can restore a file (deleted or not) with the following command : mft-win32.exe --drive=f: --record=26375 --dr --dr_backup<br><br>
 Some notes about the retrieved filerecords fields:<br>
 <br>
 <b>FileCreationTime</b> is the time that the file was created on a disk partition.<br>
